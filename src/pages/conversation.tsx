@@ -30,6 +30,13 @@ export function ConversationPage() {
   const audioQueueRef = useRef<ArrayBuffer[]>([]);
   const isPlayingRef = useRef(false);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const isMutedRef = useRef(false);
+  const animFrameRef = useRef<number | null>(null);
+
+  // Keep mute ref in sync
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   // Scroll transcript to bottom
   useEffect(() => {
@@ -44,10 +51,14 @@ export function ConversationPage() {
     const audioData = audioQueueRef.current.shift()!;
 
     try {
-      if (!audioContextRef.current) {
+      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
         audioContextRef.current = new AudioContext();
       }
+      if (audioContextRef.current.state === "suspended") {
+        await audioContextRef.current.resume();
+      }
 
+      console.log("[conversation] Decoding audio chunk, size:", audioData.byteLength);
       const audioBuffer =
         await audioContextRef.current.decodeAudioData(audioData);
       const source = audioContextRef.current.createBufferSource();
@@ -62,25 +73,31 @@ export function ConversationPage() {
 
       setActiveSpeaker("future");
       source.start();
+      console.log("[conversation] Playing audio, duration:", audioBuffer.duration.toFixed(2), "s");
     } catch (e) {
-      console.error("Audio playback error:", e);
+      console.error("[conversation] Audio playback error:", e);
       isPlayingRef.current = false;
       playNextAudio();
     }
   }, []);
 
-  // Connect to agent WebSocket
+  // Connect to agent WebSocket — only depends on sessionId
   useEffect(() => {
+    if (!sessionId) return;
+
     const userId = getUserId();
     const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/agents/future-self-agent/${sessionId}`;
 
+    console.log("[conversation] Connecting WebSocket:", wsUrl);
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log("[conversation] WebSocket connected");
       setStatus("connected");
 
-      // Get session config from PresentSelfAgent and start conversation
+      // Get session config from PresentSelfAgent
+      console.log("[conversation] Fetching session config for user:", userId);
       fetch(`/agents/present-self-agent/${userId}?method=getState`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,110 +105,143 @@ export function ConversationPage() {
       })
         .then((r) => r.json())
         .then((state) => {
-          // Start conversation with config
+          console.log("[conversation] Got state, voiceId:", state.voiceId, "sessions:", state.sessions?.length);
+
+          // Look for persona in localStorage (saved during setup)
+          const savedPersona = localStorage.getItem(`doppel_persona_${sessionId}`);
+          const systemPrompt = savedPersona
+            ? JSON.parse(savedPersona).systemPrompt
+            : "You are the user's future self, 10 years older. Speak with warmth and earned wisdom.";
+
+          console.log("[conversation] Starting conversation with voiceId:", state.voiceId);
           ws.send(
             JSON.stringify({
               type: "start_conversation",
               config: {
                 sessionId,
                 voiceId: state.voiceId,
-                systemPrompt:
-                  state.sessions?.find(
-                    (s: { sessionId: string }) => s.sessionId === sessionId
-                  )?.persona?.systemPrompt ||
-                  "You are the user's future self, 10 years older. Speak with warmth and earned wisdom.",
+                systemPrompt,
               },
             })
           );
         })
         .catch((e) => {
-          console.error("Failed to get session config:", e);
+          console.error("[conversation] Failed to get session config:", e);
+          setStatus("error");
         });
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log("[conversation] WS message:", data.type);
 
         switch (data.type) {
+          case "connected":
+            console.log("[conversation] Agent connected, state:", data.state?.status);
+            break;
+
           case "conversation_started":
+            console.log("[conversation] Conversation started, beginning mic stream");
             startMicrophoneStream();
             break;
 
-          case "audio":
-            // Decode base64 audio and queue for playback
+          case "audio": {
             const audioBytes = Uint8Array.from(atob(data.audio), (c) =>
               c.charCodeAt(0)
             );
+            console.log("[conversation] Received audio chunk:", audioBytes.length, "bytes");
             audioQueueRef.current.push(audioBytes.buffer);
             playNextAudio();
             break;
+          }
 
           case "transcript":
+            console.log("[conversation] Transcript:", data.entry?.speaker, data.entry?.text?.slice(0, 50));
             setTranscript((prev) => [...prev, data.entry]);
             break;
 
           case "interruption":
-            // User interrupted — stop playback
             audioQueueRef.current = [];
             isPlayingRef.current = false;
             setActiveSpeaker(null);
             break;
 
           case "conversation_ended":
+            console.log("[conversation] Conversation ended, navigating to replay");
             setStatus("disconnected");
             navigate(`/replay/${data.sessionId}`);
             break;
 
           case "error":
-            console.error("Agent error:", data.message);
+            console.error("[conversation] Agent error:", data.message);
             setStatus("error");
+            break;
+
+          case "elevenlabs_event":
+            console.log("[conversation] ElevenLabs event:", data.event?.type);
             break;
         }
       } catch (e) {
-        console.error("WebSocket message error:", e);
+        console.error("[conversation] WS message parse error:", e);
       }
     };
 
-    ws.onerror = () => {
+    ws.onerror = (e) => {
+      console.error("[conversation] WebSocket error:", e);
       setStatus("error");
     };
 
-    ws.onclose = () => {
-      if (status !== "disconnected") {
-        setStatus("disconnected");
-      }
+    ws.onclose = (e) => {
+      console.log("[conversation] WebSocket closed, code:", e.code, "reason:", e.reason);
+      setStatus("disconnected");
     };
 
     return () => {
+      console.log("[conversation] Cleanup: closing WebSocket");
       ws.close();
       if (mediaRecorderRef.current?.state === "recording") {
         mediaRecorderRef.current.stop();
       }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
     };
-  }, [sessionId, navigate, playNextAudio, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   // Start streaming microphone to agent
   const startMicrophoneStream = async () => {
     try {
+      console.log("[conversation] Requesting microphone access");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("[conversation] Microphone access granted");
 
       // Setup analyzer for visualization
-      audioContextRef.current = new AudioContext();
+      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+        audioContextRef.current = new AudioContext();
+      }
       analyzerRef.current = audioContextRef.current.createAnalyser();
       analyzerRef.current.fftSize = 256;
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyzerRef.current);
 
       // Setup recorder
+      const mimeType = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+      ].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
+
+      console.log("[conversation] Recording MIME type:", mimeType || "default");
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "audio/mp4",
+        ...(mimeType ? { mimeType } : {}),
       });
 
       mediaRecorder.ondataavailable = async (e) => {
-        if (e.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN && !isMuted) {
+        if (e.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN && !isMutedRef.current) {
           const base64 = await blobToBase64(e.data);
           wsRef.current.send(
             JSON.stringify({
@@ -199,12 +249,12 @@ export function ConversationPage() {
               audio: base64,
             })
           );
-          setActiveSpeaker("user");
         }
       };
 
       mediaRecorder.start(100); // Send chunks every 100ms
       mediaRecorderRef.current = mediaRecorder;
+      console.log("[conversation] Microphone streaming started");
 
       // Update audio levels visualization
       const updateLevels = () => {
@@ -217,17 +267,18 @@ export function ConversationPage() {
             dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
           setAudioLevels((prev) => ({ ...prev, user: avg }));
         }
-        requestAnimationFrame(updateLevels);
+        animFrameRef.current = requestAnimationFrame(updateLevels);
       };
       updateLevels();
     } catch (e) {
-      console.error("Microphone access error:", e);
+      console.error("[conversation] Microphone access error:", e);
       setStatus("error");
     }
   };
 
   // End conversation
   const endConversation = () => {
+    console.log("[conversation] User ended conversation");
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "end_conversation" }));
     }

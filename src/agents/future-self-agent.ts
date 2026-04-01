@@ -59,11 +59,13 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
   };
 
   onConnect(connection: Connection, ctx: ConnectionContext): void {
+    console.log("[FutureSelfAgent] onConnect, name:", this.name);
     this.browserConnection = connection;
     connection.send(JSON.stringify({ type: "connected", state: this.state }));
   }
 
   onClose(connection: Connection): void {
+    console.log("[FutureSelfAgent] onClose");
     if (this.browserConnection === connection) {
       this.browserConnection = null;
       this.cleanup();
@@ -73,26 +75,28 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
   async onMessage(connection: Connection, message: string): Promise<void> {
     try {
       const data = JSON.parse(message);
+      console.log("[FutureSelfAgent] onMessage:", data.type);
 
       switch (data.type) {
         case "start_conversation":
+          console.log("[FutureSelfAgent] Starting conversation, voiceId:", data.config?.voiceId);
           await this.startConversation(data.config as ConversationConfig);
           break;
 
         case "audio_chunk":
-          // Forward user audio to ElevenLabs
           this.forwardAudioToElevenLabs(data.audio as string);
           break;
 
         case "end_conversation":
+          console.log("[FutureSelfAgent] Ending conversation");
           await this.endConversation();
           break;
 
         default:
-          console.warn("Unknown message type:", data.type);
+          console.warn("[FutureSelfAgent] Unknown message type:", data.type);
       }
     } catch (e) {
-      console.error("Error handling message:", e);
+      console.error("[FutureSelfAgent] Error handling message:", e);
       connection.send(
         JSON.stringify({ type: "error", message: (e as Error).message })
       );
@@ -113,12 +117,11 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
     });
 
     try {
-      // Connect to ElevenLabs Conversational AI WebSocket
-      // Workers use fetch with Upgrade header for WebSocket
+      console.log("[FutureSelfAgent] Connecting to ElevenLabs ConvAI...");
       const wsUrl = new URL(
         "https://api.elevenlabs.io/v1/convai/conversation"
       );
-      wsUrl.searchParams.set("agent_id", "custom"); // We're using custom config
+      wsUrl.searchParams.set("agent_id", "custom");
 
       const response = await fetch(wsUrl.toString(), {
         headers: {
@@ -135,6 +138,7 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
 
       ws.accept();
       this.elevenLabsWs = ws;
+      console.log("[FutureSelfAgent] ElevenLabs WebSocket connected");
 
       // Send conversation initialization config
       ws.send(
@@ -181,11 +185,12 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
       });
 
       this.setState({ ...this.state, status: "active" });
+      console.log("[FutureSelfAgent] Conversation started, status: active");
       this.browserConnection?.send(
         JSON.stringify({ type: "conversation_started" })
       );
     } catch (e) {
-      console.error("Failed to start conversation:", e);
+      console.error("[FutureSelfAgent] Failed to start conversation:", e);
       this.setState({ ...this.state, status: "idle" });
       this.browserConnection?.send(
         JSON.stringify({
@@ -202,6 +207,7 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
   private handleElevenLabsMessage(data: string): void {
     try {
       const message = JSON.parse(data);
+      console.log("[FutureSelfAgent] ElevenLabs msg:", message.type);
 
       switch (message.type) {
         case "audio":

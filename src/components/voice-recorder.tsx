@@ -75,11 +75,16 @@ export function VoiceRecorder({
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyzerRef.current);
 
-      // Setup recording
+      // Setup recording — pick best supported MIME type
+      const mimeType = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+      ].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "audio/mp4",
+        ...(mimeType ? { mimeType } : {}),
       });
 
       chunksRef.current = [];

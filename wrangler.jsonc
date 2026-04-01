@@ -23,11 +23,11 @@
     "bindings": [
       {
         "class_name": "PresentSelfAgent",
-        "name": "PRESENT_SELF"
+        "name": "PresentSelfAgent"
       },
       {
         "class_name": "FutureSelfAgent",
-        "name": "FUTURE_SELF"
+        "name": "FutureSelfAgent"
       }
     ]
   },

@@ -34,8 +34,8 @@ type CallableMethod =
   | "getMemory";
 
 export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
-  // Initialize SQL schema
   async onStart(): Promise<void> {
+    console.log("[PresentSelfAgent] onStart, name:", this.name);
     this.sql`
       CREATE TABLE IF NOT EXISTS voice_clones (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,9 +76,9 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
   }
 
   onConnect(connection: Connection, ctx: ConnectionContext): void {
-    // Extract userId from connection URL or generate one
     const url = new URL(ctx.request.url);
     const userId = url.searchParams.get("userId") ?? this.name;
+    console.log("[PresentSelfAgent] onConnect, userId:", userId);
 
     if (!this.state.userId) {
       this.setState({ ...this.state, userId });
@@ -90,11 +90,19 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
   async onRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const method = url.searchParams.get("method") as CallableMethod;
+    console.log("[PresentSelfAgent] onRequest, method:", method);
 
     if (request.method === "POST" && method) {
-      const body = await request.json();
-      const result = await this.handleCall(method, body);
-      return Response.json(result);
+      try {
+        const body = await request.json();
+        console.log("[PresentSelfAgent] Calling:", method);
+        const result = await this.handleCall(method, body);
+        console.log("[PresentSelfAgent]", method, "completed successfully");
+        return Response.json(result);
+      } catch (e) {
+        console.error("[PresentSelfAgent]", method, "failed:", (e as Error).message);
+        return Response.json({ error: (e as Error).message }, { status: 500 });
+      }
     }
 
     return Response.json({ error: "Invalid request" }, { status: 400 });
@@ -137,9 +145,11 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
    * Clone user's voice from audio recording
    */
   private async cloneVoice(audioBase64: string): Promise<{ voiceId: string }> {
+    console.log("[PresentSelfAgent] cloneVoice: audio base64 length:", audioBase64.length);
     const audioBuffer = Uint8Array.from(atob(audioBase64), (c) =>
       c.charCodeAt(0)
     );
+    console.log("[PresentSelfAgent] cloneVoice: decoded audio size:", audioBuffer.length, "bytes");
     const voiceName = `DOPPEL_${this.state.userId}_${Date.now()}`;
 
     // Create form data for ElevenLabs API
@@ -167,6 +177,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
 
     const data = (await response.json()) as { voice_id: string };
     const voiceId = data.voice_id;
+    console.log("[PresentSelfAgent] cloneVoice: success, voiceId:", voiceId);
 
     // Store in SQL
     this.sql`
@@ -198,6 +209,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
 
     const sessionId = crypto.randomUUID();
     const futureAge = userAge + yearsAhead;
+    console.log("[PresentSelfAgent] initSession: sessionId:", sessionId, "situation:", situation.slice(0, 50), "age:", userAge, "->", futureAge);
 
     // Generate persona with Workers AI
     const persona = await this.generatePersona(
@@ -309,8 +321,8 @@ Return ONLY valid JSON, no markdown.`;
   ): Promise<string> {
     const voiceId = this.state.voiceId!;
 
-    // Build 4-line dialogue script
-    const script = [
+    // Build dialogue script using "inputs" format
+    const inputs = [
       {
         voice_id: voiceId,
         text: `I've been thinking a lot about ${situation.split(" ").slice(0, 5).join(" ")}...`,
@@ -338,8 +350,8 @@ Return ONLY valid JSON, no markdown.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          inputs,
           model_id: "eleven_v3",
-          dialogue: script,
         }),
       }
     );

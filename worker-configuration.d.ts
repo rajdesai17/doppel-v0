@@ -3,8 +3,8 @@
 interface Env {
   AI: Ai;
   AUDIO_BUCKET: R2Bucket;
-  PRESENT_SELF: DurableObjectNamespace;
-  FUTURE_SELF: DurableObjectNamespace;
+  PresentSelfAgent: DurableObjectNamespace;
+  FutureSelfAgent: DurableObjectNamespace;
   ELEVENLABS_API_KEY: string;
   ENVIRONMENT: string;
 }

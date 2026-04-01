@@ -47,8 +47,14 @@ app.get("/api/replay/:sessionId", async (c) => {
 
 // Route agent requests (WebSocket connections)
 app.all("/agents/*", async (c) => {
+  const url = new URL(c.req.url);
+  console.log("[server] Agent request:", c.req.method, url.pathname + url.search);
   const response = await routeAgentRequest(c.req.raw, c.env);
-  if (response) return response;
+  if (response) {
+    console.log("[server] Agent response status:", response.status);
+    return response;
+  }
+  console.warn("[server] No agent matched for:", url.pathname);
   return c.json({ error: "Agent not found" }, 404);
 });
 
