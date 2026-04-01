@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "../../components/ui/button";
 
 const spring = { type: "spring", stiffness: 100, damping: 20 };
 
@@ -22,7 +23,7 @@ export function LandingPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0.1 }}
-        className="font-serif text-6xl md:text-8xl text-white tracking-tighter leading-[1.1] mb-6"
+        className="font-serif text-6xl md:text-8xl text-white tracking-tighter leading-[1.1] mb-6 text-balance"
       >
         Meet Your
         <br />
@@ -34,7 +35,7 @@ export function LandingPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0.2 }}
-        className="max-w-md text-white/60 text-sm md:text-base leading-relaxed mb-12"
+        className="max-w-md text-white/60 text-sm md:text-base leading-relaxed mb-12 text-pretty"
       >
         Clone your voice. Describe your crossroads. Have a real conversation
         with who you could become — 10 years from now.
@@ -51,19 +52,18 @@ export function LandingPage() {
         }}
       />
 
-      {/* CTA Button - High contrast */}
+      {/* CTA Button */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0.4 }}
       >
-        <Link
-          to="/setup"
-          className="inline-flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300"
-        >
-          Start your conversation
-          <ArrowRight size={16} />
-        </Link>
+        <Button asChild size="lg" className="rounded-full px-8">
+          <Link to="/setup">
+            Start your conversation
+            <ArrowRight />
+          </Link>
+        </Button>
       </motion.div>
     </main>
   );

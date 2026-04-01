@@ -4,6 +4,10 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceRecorder } from "../components/voice-recorder";
 import { getUserId, blobToBase64 } from "../lib/utils";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import { Label } from "../../components/ui/label";
 
 type Step = "voice" | "situation" | "processing";
 
@@ -155,51 +159,54 @@ export function SetupPage() {
             {/* Form */}
             <div className="w-full flex flex-col gap-6 mb-8">
               <div className="text-left">
-                <label className="block font-mono text-[10px] uppercase tracking-[0.3em] text-white/50 mb-2">
+                <Label htmlFor="age" className="text-white/50 mb-2">
                   Your age
-                </label>
-                <input
+                </Label>
+                <Input
+                  id="age"
                   type="number"
                   value={age}
                   onChange={(e) => setAge(parseInt(e.target.value) || 25)}
                   min={18}
                   max={80}
-                  className="w-full h-12 px-4 bg-transparent border border-white/20 rounded-lg font-sans text-white focus:outline-none focus:border-white transition-colors duration-300"
+                  className="bg-transparent border-white/20 text-white focus:border-white"
                 />
               </div>
 
               <div className="text-left">
-                <label className="block font-mono text-[10px] uppercase tracking-[0.3em] text-white/50 mb-2">
+                <Label htmlFor="situation" className="text-white/50 mb-2">
                   Your situation
-                </label>
-                <textarea
+                </Label>
+                <Textarea
+                  id="situation"
                   value={situation}
                   onChange={(e) => setSituation(e.target.value)}
                   placeholder="I'm trying to decide whether to leave my job and start my own company..."
                   rows={4}
-                  className="w-full px-4 py-3 bg-transparent border border-white/20 rounded-lg font-sans text-white placeholder:text-white/20 focus:outline-none focus:border-white resize-none transition-colors duration-300 leading-relaxed"
+                  className="bg-transparent border-white/20 text-white placeholder:text-white/20 focus:border-white resize-none"
                 />
               </div>
             </div>
 
             {/* Submit */}
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={!situation.trim() || isProcessing}
-              className="flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+              size="lg"
+              className="rounded-full px-8"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 className="animate-spin" />
                   Creating...
                 </>
               ) : (
                 <>
                   Meet your future self
-                  <ArrowRight size={16} />
+                  <ArrowRight />
                 </>
               )}
-            </button>
+            </Button>
           </motion.div>
         )}
 

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Check, RotateCcw, Play, Pause } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
+import { Button } from "../../components/ui/button";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
@@ -181,7 +182,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   return (
     <div className="flex flex-col items-center">
       {/* Extraction Ring - Massive centered circle */}
-      <div className="relative w-64 h-64 flex items-center justify-center mb-8">
+      <div className="relative size-64 flex items-center justify-center mb-8">
         {/* SVG Progress Ring */}
         <svg className="absolute inset-0 progress-ring" viewBox="0 0 256 256">
           {/* Base ring */}
@@ -281,46 +282,57 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
           className="mb-6"
         >
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
-          <button
+          <Button
             onClick={togglePlayback}
-            className="flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-white/10 border border-white/20 text-white text-sm hover:bg-white hover:text-black transition-all duration-300"
+            variant="outline"
+            size="lg"
+            className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
           >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            {isPlaying ? <Pause /> : <Play />}
             {isPlaying ? "Pause" : "Play recording"}
-          </button>
+          </Button>
         </motion.div>
       )}
 
       {/* Action Button */}
       <AnimatePresence mode="wait">
         {status === "idle" && (
-          <motion.button
+          <motion.div
             key="start"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={spring}
-            onClick={startRecording}
-            className="flex items-center gap-3 bg-white/10 hover:bg-white text-white hover:text-black border border-white/20 transition-all duration-300 rounded-full px-8 py-3 text-sm"
           >
-            <Mic size={16} />
-            Start recording
-          </motion.button>
+            <Button
+              onClick={startRecording}
+              variant="outline"
+              size="lg"
+              className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
+            >
+              <Mic />
+              Start recording
+            </Button>
+          </motion.div>
         )}
 
         {status === "recording" && (
-          <motion.button
+          <motion.div
             key="stop"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={spring}
-            onClick={stopRecording}
-            className="flex items-center gap-3 bg-white text-black rounded-full px-8 py-3 text-sm font-medium hover:scale-105 transition-transform duration-300"
           >
-            <Square size={16} />
-            Stop recording
-          </motion.button>
+            <Button
+              onClick={stopRecording}
+              size="lg"
+              className="rounded-full"
+            >
+              <Square />
+              Stop recording
+            </Button>
+          </motion.div>
         )}
 
         {status === "recorded" && (
@@ -332,20 +344,23 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
             transition={spring}
             className="flex gap-3"
           >
-            <button
+            <Button
               onClick={resetRecording}
-              className="flex items-center gap-2 bg-white/10 text-white border border-white/20 rounded-full px-6 py-3 text-sm hover:bg-white hover:text-black transition-all duration-300"
+              variant="outline"
+              size="lg"
+              className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
             >
-              <RotateCcw size={16} />
+              <RotateCcw />
               Re-record
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={confirmRecording}
-              className="flex items-center gap-2 bg-white text-black rounded-full px-6 py-3 text-sm font-medium hover:scale-105 transition-transform duration-300"
+              size="lg"
+              className="rounded-full"
             >
-              <Check size={16} />
+              <Check />
               Use this
-            </button>
+            </Button>
           </motion.div>
         )}
 
@@ -361,15 +376,16 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
             <p className="text-sm text-white/60 mb-4 max-w-sm leading-relaxed">
               {errorMsg || "Could not access microphone."}
             </p>
-            <button
+            <Button
               onClick={() => {
                 setStatus("idle");
                 setErrorMsg(null);
               }}
-              className="text-sm text-white/40 hover:text-white transition-colors duration-300"
+              variant="ghost"
+              className="text-white/40 hover:text-white"
             >
               Try again
-            </button>
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>

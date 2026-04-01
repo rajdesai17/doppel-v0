@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Share2, Download, Play, Pause, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn, formatDuration } from "../lib/utils";
+import { Button } from "../../components/ui/button";
 
 interface ReplayData {
   sessionId: string;
@@ -74,13 +75,12 @@ export function ReplayPage() {
         <p className="text-white/50 text-sm mb-8">
           This conversation may have expired.
         </p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300"
-        >
-          Start a new conversation
-          <ArrowRight size={16} />
-        </Link>
+        <Button asChild size="lg" className="rounded-full px-8">
+          <Link to="/">
+            Start a new conversation
+            <ArrowRight />
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -94,19 +94,19 @@ export function ReplayPage() {
         transition={spring}
         className="shrink-0 h-14 flex items-center justify-between px-6 border-b border-white/10"
       >
-        <Link
-          to="/setup"
-          className="text-sm text-white/50 hover:text-white transition-colors duration-300"
-        >
-          New conversation
-        </Link>
-        <button
+        <Button asChild variant="ghost" className="text-white/50 hover:text-white">
+          <Link to="/setup">
+            New conversation
+          </Link>
+        </Button>
+        <Button
           onClick={handleShare}
-          className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors duration-300"
+          variant="ghost"
+          className="text-white/50 hover:text-white"
         >
-          <Share2 size={14} />
+          <Share2 />
           <span>{copied ? "Copied" : "Share"}</span>
-        </button>
+        </Button>
       </motion.header>
 
       {/* Content */}
@@ -140,12 +140,13 @@ export function ReplayPage() {
             className="p-6 mb-12 rounded-2xl border border-white/10"
           >
             <div className="flex items-center gap-4">
-              <button
+              <Button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="size-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-300 shrink-0"
+                size="icon-lg"
+                className="rounded-full shrink-0"
               >
-                {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-              </button>
+                {isPlaying ? <Pause /> : <Play className="ml-0.5" />}
+              </Button>
 
               <div className="flex-1 min-w-0">
                 <div className="h-px bg-white/10 rounded-full overflow-hidden mb-2">
@@ -160,13 +161,19 @@ export function ReplayPage() {
                 </div>
               </div>
 
-              <a
-                href={`/api/audio/sessions/${sessionId}/full.mp3`}
-                download
-                className="size-10 rounded-full border border-white/10 text-white/50 flex items-center justify-center hover:text-white hover:border-white/20 transition-all duration-300 shrink-0"
+              <Button
+                asChild
+                variant="outline"
+                size="icon"
+                className="rounded-full border-white/10 text-white/50 hover:text-white hover:border-white/20 shrink-0"
               >
-                <Download size={16} />
-              </a>
+                <a
+                  href={`/api/audio/sessions/${sessionId}/full.mp3`}
+                  download
+                >
+                  <Download />
+                </a>
+              </Button>
             </div>
           </motion.div>
 
@@ -224,13 +231,12 @@ export function ReplayPage() {
             transition={{ ...spring, delay: 0.4 }}
             className="mt-16 text-center"
           >
-            <Link
-              to="/setup"
-              className="inline-flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300"
-            >
-              Have another conversation
-              <ArrowRight size={16} />
-            </Link>
+            <Button asChild size="lg" className="rounded-full px-8">
+              <Link to="/setup">
+                Have another conversation
+                <ArrowRight />
+              </Link>
+            </Button>
           </motion.div>
         </div>
       </div>

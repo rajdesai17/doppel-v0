@@ -4,6 +4,7 @@ import { PhoneOff, Mic, MicOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Conversation } from "@elevenlabs/client";
 import { cn } from "../lib/utils";
+import { Button } from "../../components/ui/button";
 
 interface TranscriptEntry {
   speaker: "user" | "future";
@@ -233,7 +234,7 @@ export function ConversationPage() {
               opacity: activeSpeaker === "future" ? [0.3, 0.6, 0.3] : 0.2,
             }}
             transition={{ duration: 2, repeat: activeSpeaker === "future" ? Infinity : 0, ease: "easeInOut" }}
-            className="w-40 h-40 rounded-full border border-white/20"
+            className="size-40 rounded-full border border-white/20"
             style={{
               boxShadow: activeSpeaker === "future" ? "0 0 40px rgba(255, 255, 255, 0.2)" : "none",
             }}
@@ -349,27 +350,30 @@ export function ConversationPage() {
         className="shrink-0 py-8 flex items-center justify-center gap-6"
       >
         {/* Mute button */}
-        <button
+        <Button
           onClick={toggleMute}
+          variant="ghost"
+          size="icon-lg"
           className={cn(
-            "size-14 rounded-full flex items-center justify-center transition-all duration-300",
+            "rounded-full",
             isMuted
               ? "bg-white/10 text-white/50"
               : "bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/50"
           )}
           aria-label={isMuted ? "Unmute" : "Mute"}
         >
-          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
-        </button>
+          {isMuted ? <MicOff /> : <Mic />}
+        </Button>
 
         {/* End call button */}
-        <button
+        <Button
           onClick={endConversation}
-          className="size-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-300"
+          size="icon-lg"
+          className="rounded-full size-16"
           aria-label="End conversation"
         >
-          <PhoneOff size={20} />
-        </button>
+          <PhoneOff />
+        </Button>
       </motion.footer>
     </div>
   );
