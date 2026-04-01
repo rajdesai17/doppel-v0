@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Check, RotateCcw, Play, Pause } from "lucide-react";
-import { cn, formatDuration } from "../lib/utils";
+import { formatDuration } from "../lib/utils";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
@@ -40,12 +40,10 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
       streamRef.current = stream;
 
       const track = stream.getAudioTracks()[0];
-      console.log("[recorder] Audio track:", track.label, "enabled:", track.enabled);
-
       if (track.muted) {
         stream.getTracks().forEach((t) => t.stop());
         setStatus("error");
-        setErrorMsg("Your microphone is muted at the system level. Please unmute it and try again.");
+        setErrorMsg("Your microphone is muted. Please unmute and try again.");
         return;
       }
 
@@ -63,9 +61,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
       const chunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
+        if (e.data.size > 0) chunks.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
@@ -90,9 +86,9 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
           stopRecording();
         }
       }, 250);
-    } catch (e) {
-      console.error("[recorder] Failed:", e);
+    } catch {
       setStatus("error");
+      setErrorMsg("Could not access microphone. Please check permissions.");
     }
   };
 
@@ -135,60 +131,59 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
   const progress = (elapsed / duration) * 100;
 
+  // Format time as M:SS with large monospace digits
+  const formatTimer = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div className="flex flex-col items-center">
       {/* Status indicator */}
-      <div className="h-20 flex items-center justify-center mb-6">
-        {status === "recording" ? (
-          <div className="flex items-center gap-2.5">
-            <div className="size-2.5 rounded-full bg-error animate-pulse" />
-            <span className="text-sm font-medium text-error">Recording</span>
+      <div className="h-8 flex items-center justify-center mb-8">
+        {status === "recording" && (
+          <div className="flex items-center gap-2">
+            <div className="size-2 rounded-full bg-[rgb(var(--error))] animate-pulse" />
+            <span className="text-sm font-medium text-[rgb(var(--error))]">Recording</span>
           </div>
-        ) : status === "recorded" ? (
-          <div className="flex items-center gap-2.5">
-            <div className="size-2.5 rounded-full bg-success" />
-            <span className="text-sm font-medium text-success">Complete</span>
+        )}
+        {status === "recorded" && (
+          <div className="flex items-center gap-2">
+            <div className="size-2 rounded-full bg-[rgb(var(--success))]" />
+            <span className="text-sm font-medium text-[rgb(var(--success))]">Recorded</span>
           </div>
-        ) : (
-          <Mic className="size-8 text-text-muted" />
+        )}
+        {status === "idle" && (
+          <Mic className="size-6 text-[rgb(var(--text-muted))]" />
         )}
       </div>
 
-      {/* Timer */}
-      <div className="text-center mb-6">
-        <div className="font-mono text-3xl text-foreground tabular-nums tracking-tight">
-          {formatDuration(elapsed * 1000)}
+      {/* Large timer */}
+      <div className="text-center mb-8">
+        <div
+          className="font-mono text-7xl font-normal text-[rgb(var(--foreground))] tracking-tight"
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          {formatTimer(elapsed)}
         </div>
-        <p className="text-caption mt-1">
-          {status === "recording"
-            ? `${duration - elapsed}s remaining`
-            : status === "recorded"
-              ? "Recording complete"
-              : `Record for ${duration} seconds`}
-        </p>
       </div>
 
       {/* Progress bar */}
-      {status === "recording" && (
-        <div className="w-full h-1 bg-surface-1 rounded-full mb-6 overflow-hidden">
-          <div
-            className="h-full bg-foreground transition-all duration-100"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      )}
+      <div className="w-full max-w-md h-1 bg-[rgb(var(--surface-2))] rounded-full mb-10 overflow-hidden">
+        <div
+          className="h-full bg-[rgb(var(--accent))] transition-all duration-100"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
       {/* Audio playback */}
       {status === "recorded" && audioUrl && (
-        <div className="w-full mb-6">
-          <audio
-            ref={audioRef}
-            src={audioUrl}
-            onEnded={() => setIsPlaying(false)}
-          />
+        <div className="w-full max-w-md mb-6">
+          <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-surface-1 text-foreground hover:bg-surface-2 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[rgb(var(--surface-1))] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-2))] transition-colors"
           >
             {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
             {isPlaying ? "Pause" : "Play Recording"}
@@ -199,14 +194,17 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
       {/* Controls */}
       <div className="flex items-center gap-3">
         {status === "idle" && (
-          <button onClick={startRecording} className="btn btn-primary h-11 px-6">
-            <Mic className="size-4" />
+          <button onClick={startRecording} className="btn btn-accent h-14 px-8 text-base">
+            <Mic className="size-5" />
             Start Recording
           </button>
         )}
 
         {status === "recording" && (
-          <button onClick={stopRecording} className="btn h-11 px-6 bg-error text-white hover:bg-error/90">
+          <button
+            onClick={stopRecording}
+            className="btn h-14 px-8 text-base rounded-full bg-[rgb(var(--error))] text-white hover:bg-[rgb(var(--error)/0.9)]"
+          >
             <Square className="size-4" />
             Stop
           </button>
@@ -214,28 +212,28 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
         {status === "recorded" && (
           <>
-            <button onClick={resetRecording} className="btn btn-secondary h-11 px-5">
+            <button onClick={resetRecording} className="btn btn-secondary h-12 px-5">
               <RotateCcw className="size-4" />
               Re-record
             </button>
-            <button onClick={confirmRecording} className="btn btn-primary h-11 px-6">
+            <button onClick={confirmRecording} className="btn btn-accent h-12 px-6">
               <Check className="size-4" />
-              Use Recording
+              Use this recording
             </button>
           </>
         )}
 
         {status === "error" && (
           <div className="text-center">
-            <p className="text-sm text-error mb-4 max-w-sm">
-              {errorMsg || "Could not access microphone. Please check permissions."}
+            <p className="text-sm text-[rgb(var(--error))] mb-4 max-w-sm">
+              {errorMsg || "Could not access microphone."}
             </p>
             <button
               onClick={() => {
                 setStatus("idle");
                 setErrorMsg(null);
               }}
-              className="text-text-secondary hover:text-foreground text-sm transition-colors"
+              className="text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--foreground))] text-sm transition-colors"
             >
               Try again
             </button>

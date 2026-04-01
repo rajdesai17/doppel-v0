@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const LOADING_MESSAGES = [
   "Analyzing voice patterns",
@@ -17,17 +17,14 @@ export function LoadingPage() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Cycle through messages
     const messageInterval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
     }, 2500);
 
-    // Animate progress
     const progressInterval = setInterval(() => {
       setProgress((prev) => Math.min(prev + 2, 95));
     }, 200);
 
-    // Check if session is ready
     const checkReady = setInterval(async () => {
       try {
         const response = await fetch(`/api/session/${sessionId}/status`);
@@ -36,20 +33,15 @@ export function LoadingPage() {
           if (status === "ready") {
             clearInterval(checkReady);
             setProgress(100);
-            setTimeout(() => {
-              navigate(`/conversation/${sessionId}`);
-            }, 500);
+            setTimeout(() => navigate(`/conversation/${sessionId}`), 500);
           }
         }
       } catch {
-        // Session API not ready, will redirect from setup page
+        // Will redirect from setup
       }
     }, 2000);
 
-    // Fallback redirect
-    const timeout = setTimeout(() => {
-      navigate(`/conversation/${sessionId}`);
-    }, 15000);
+    const timeout = setTimeout(() => navigate(`/conversation/${sessionId}`), 15000);
 
     return () => {
       clearInterval(messageInterval);
@@ -60,46 +52,41 @@ export function LoadingPage() {
   }, [sessionId, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[rgb(var(--background))]">
       {/* Header */}
       <header className="header">
         <Link to="/setup" className="btn-ghost flex items-center gap-2">
           <ArrowLeft className="size-4" />
-          <span className="hidden sm:inline">Back</span>
         </Link>
         <span className="header-logo">DOPPEL</span>
-        <div className="w-16" />
+        <div className="w-10" />
       </header>
 
       {/* Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="max-w-sm w-full text-center">
-          {/* Animated loader */}
-          <div className="relative size-24 mx-auto mb-10">
-            <div className="absolute inset-0 rounded-full bg-surface-1 animate-breathe" />
-            <div className="absolute inset-3 rounded-full bg-surface-2 animate-breathe" style={{ animationDelay: "150ms" }} />
-            <div className="absolute inset-6 rounded-full bg-surface-3 animate-breathe" style={{ animationDelay: "300ms" }} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="size-5 text-text-secondary animate-spin" />
-            </div>
+          {/* Processing orb */}
+          <div className="processing-orb mx-auto mb-10">
+            <div className="processing-orb-ring processing-orb-ring-1" />
+            <div className="processing-orb-ring processing-orb-ring-2" />
+            <div className="processing-orb-ring processing-orb-ring-3" />
+            <div className="processing-orb-core" />
           </div>
 
           {/* Status */}
-          <h2 className="text-title text-foreground mb-3">
+          <h2 className="text-title text-[rgb(var(--foreground))] mb-3">
             Creating your future self
           </h2>
-          <p className="text-body mb-10 h-6">
-            {LOADING_MESSAGES[messageIndex]}...
-          </p>
+          <p className="text-body mb-10 h-6">{LOADING_MESSAGES[messageIndex]}...</p>
 
           {/* Progress bar */}
-          <div className="w-full h-1 bg-surface-1 rounded-full overflow-hidden mb-3">
+          <div className="w-full h-1 bg-[rgb(var(--surface-1))] rounded-full overflow-hidden mb-3">
             <div
-              className="h-full bg-foreground transition-all duration-200"
+              className="h-full bg-[rgb(var(--accent))] transition-all duration-200"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-mono text-text-muted text-xs">{progress}%</p>
+          <p className="text-mono text-[rgb(var(--text-muted))]">{progress}%</p>
         </div>
       </main>
     </div>
