@@ -1,19 +1,20 @@
 import { Link } from "react-router-dom";
-import { Mic, Clock, MessageSquare } from "lucide-react";
+import { Mic, Clock, MessageSquare, ArrowRight } from "lucide-react";
 
 export function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav - Fixed top */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-12 border-b border-[#1C1C1C] bg-black">
+      {/* Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-12 border-b border-[#1C1C1C] bg-black">
         <span className="font-sans text-[13px] font-medium tracking-[0.2em] text-white uppercase">
           DOPPEL
         </span>
         <Link
           to="/setup"
-          className="text-[13px] text-white px-5 py-2 border border-[#333] rounded-md hover:border-white transition-colors duration-200"
+          className="flex items-center gap-2 text-[13px] text-white px-5 py-2 border border-[#333] rounded-md hover:border-white transition-colors duration-200"
         >
-          Begin →
+          Begin
+          <ArrowRight className="size-3.5" />
         </Link>
       </nav>
 
@@ -24,37 +25,37 @@ export function LandingPage() {
           A CONVERSATION ACROSS TIME
         </p>
 
-        {/* H1 - Instrument Serif */}
-        <h1 className="font-display text-[clamp(48px,8vw,88px)] font-normal text-white leading-[0.95] max-w-[800px] mb-8">
+        {/* H1 */}
+        <h1 className="font-display text-[clamp(48px,10vw,88px)] font-normal text-white leading-[0.95] max-w-[800px] mb-8 text-balance">
           Meet Your Future Self
         </h1>
 
         {/* Subtext */}
-        <p className="font-sans text-[17px] leading-[1.65] text-[#666] max-w-[540px] mb-12">
+        <p className="font-sans text-base md:text-[17px] leading-relaxed text-[#666] max-w-[540px] mb-12 text-pretty">
           Engage in a real-time conversation with an AI persona of your future self,
           powered by advanced voice synthesis. Describe your crossroads — hear wisdom
           from a decade forward.
         </p>
 
-        {/* CTA Button - White pill */}
+        {/* CTA Button */}
         <Link
           to="/setup"
-          className="inline-flex items-center justify-center font-sans text-[15px] font-medium bg-white text-black rounded-full px-10 py-4 hover:bg-[#e5e5e5] hover:scale-[1.02] transition-all duration-150 mb-20"
+          className="inline-flex items-center justify-center gap-2 font-sans text-[15px] font-medium bg-white text-black rounded-full px-10 py-4 hover:bg-[#e5e5e5] hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 mb-20"
         >
-          Start your conversation →
+          Start your conversation
+          <ArrowRight className="size-4" />
         </Link>
 
-        {/* Waveform Strip - Cinematic audio pulse */}
+        {/* Waveform Strip */}
         <div className="absolute bottom-0 left-0 right-0 h-[72px] flex items-end justify-center overflow-hidden">
           <div 
-            className="flex items-end justify-center gap-[4px]"
+            className="flex items-end justify-center gap-1"
             style={{
               maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
               WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
             }}
           >
             {Array.from({ length: 60 }).map((_, i) => {
-              // Bell curve amplitude from center outward
               const center = 30;
               const distance = Math.abs(i - center);
               const bellCurve = Math.exp(-Math.pow(distance / 12, 2));
@@ -64,10 +65,9 @@ export function LandingPage() {
               return (
                 <div
                   key={i}
-                  className="w-[2px] rounded-sm"
+                  className="w-0.5 rounded-sm bg-white"
                   style={{
                     height: `${height}px`,
-                    backgroundColor: '#fff',
                     opacity,
                   }}
                 />
@@ -77,7 +77,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section - 3 column grid */}
+      {/* Features Section */}
       <section className="border-t border-[#1C1C1C]">
         <div className="grid grid-cols-1 md:grid-cols-3">
           <FeatureCard
@@ -122,15 +122,15 @@ function FeatureCard({
 }) {
   return (
     <div 
-      className={`px-12 py-10 ${hasBorder ? 'border-x border-[#1C1C1C] max-md:border-x-0 max-md:border-y' : ''}`}
+      className={`px-8 md:px-12 py-10 ${hasBorder ? 'md:border-x border-y md:border-y-0 border-[#1C1C1C]' : ''}`}
     >
       <div className="text-[#444] mb-5">
         {icon}
       </div>
-      <h3 className="font-sans text-[16px] font-semibold text-white mb-3">
+      <h3 className="font-sans text-base font-semibold text-white mb-3">
         {title}
       </h3>
-      <p className="font-sans text-[13px] leading-[1.6] text-[#666] max-w-[280px]">
+      <p className="font-sans text-[13px] leading-relaxed text-[#666] max-w-[280px]">
         {description}
       </p>
     </div>
