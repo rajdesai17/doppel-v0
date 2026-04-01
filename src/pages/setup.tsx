@@ -8,6 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
+import { PageLayout, PageHeader, ProcessingOrb } from "../components/ui";
 
 type Step = "voice" | "situation" | "processing";
 
@@ -21,7 +22,9 @@ export function SetupPage() {
   const [age, setAge] = useState(25);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [processingMessage, setProcessingMessage] = useState("Analyzing your voice...");
+  const [processingMessage, setProcessingMessage] = useState(
+    "Analyzing your voice..."
+  );
 
   const handleVoiceRecorded = (blob: Blob) => {
     setAudioBlob(blob);
@@ -80,12 +83,13 @@ export function SetupPage() {
         throw new Error("Failed to create session");
       }
 
-      const { sessionId, persona, agentId, voiceId } = (await sessionResponse.json()) as {
-        sessionId: string;
-        persona: unknown;
-        agentId: string;
-        voiceId: string;
-      };
+      const { sessionId, persona, agentId, voiceId } =
+        (await sessionResponse.json()) as {
+          sessionId: string;
+          persona: unknown;
+          agentId: string;
+          voiceId: string;
+        };
 
       localStorage.setItem(
         `doppel_session_${sessionId}`,
@@ -103,63 +107,68 @@ export function SetupPage() {
   };
 
   return (
-    <main className="h-screen w-full flex flex-col items-center justify-center text-center px-4 bg-black">
+    <PageLayout>
       <AnimatePresence mode="wait">
         {/* Step 1: Voice Recording */}
         {step === "voice" && (
-          <motion.div
+          <motion.section
             key="voice"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={spring}
-            className="flex flex-col items-center"
+            className="flex flex-col items-center text-center"
           >
-            {/* Header */}
-            <h2 className="font-serif text-4xl text-white mb-2">
-              Record your voice
-            </h2>
-            <p className="text-white/50 text-sm mb-16">
-              Speak naturally for 30 seconds to create your clone.
-            </p>
-
-            {/* Voice Recorder */}
-            <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
-          </motion.div>
+            <PageHeader
+              title="Record your voice"
+              subtitle="Speak naturally for 30 seconds to create your clone."
+              animated={false}
+              className="mb-16"
+            />
+            <VoiceRecorder
+              onRecordingComplete={handleVoiceRecorded}
+              duration={30}
+            />
+          </motion.section>
         )}
 
         {/* Step 2: Situation */}
         {step === "situation" && (
-          <motion.div
+          <motion.section
             key="situation"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={spring}
-            className="flex flex-col items-center w-full max-w-md"
+            className="flex flex-col items-center w-full max-w-md text-center"
           >
-            {/* Header */}
-            <h2 className="font-serif text-4xl text-white mb-2">
-              {"What's on your mind?"}
-            </h2>
-            <p className="text-white/50 text-sm mb-12">
-              {"Describe a decision or crossroads you're facing."}
-            </p>
+            <PageHeader
+              title="What's on your mind?"
+              subtitle="Describe a decision or crossroads you're facing."
+              animated={false}
+              className="mb-12"
+            />
 
             {error && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-sm text-white/60 mb-6 p-4 bg-white/5 rounded-lg border border-white/10"
+                className="text-sm text-white/60 mb-6 p-4 bg-white/5 rounded-lg border border-white/10 w-full"
               >
                 {error}
               </motion.p>
             )}
 
             {/* Form */}
-            <div className="w-full flex flex-col gap-6 mb-8">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+              className="w-full flex flex-col gap-6 mb-8"
+            >
               <div className="text-left">
-                <Label htmlFor="age" className="text-white/50 mb-2">
+                <Label htmlFor="age" className="text-white/50 mb-2 block">
                   Your age
                 </Label>
                 <Input
@@ -169,12 +178,11 @@ export function SetupPage() {
                   onChange={(e) => setAge(parseInt(e.target.value) || 25)}
                   min={18}
                   max={80}
-                  className="bg-transparent border-white/20 text-white focus:border-white"
                 />
               </div>
 
               <div className="text-left">
-                <Label htmlFor="situation" className="text-white/50 mb-2">
+                <Label htmlFor="situation" className="text-white/50 mb-2 block">
                   Your situation
                 </Label>
                 <Textarea
@@ -183,62 +191,38 @@ export function SetupPage() {
                   onChange={(e) => setSituation(e.target.value)}
                   placeholder="I'm trying to decide whether to leave my job and start my own company..."
                   rows={4}
-                  className="bg-transparent border-white/20 text-white placeholder:text-white/20 focus:border-white resize-none"
+                  className="resize-none"
                 />
               </div>
-            </div>
 
-            {/* Submit */}
-            <Button
-              onClick={handleSubmit}
-              disabled={!situation.trim() || isProcessing}
-              size="lg"
-              className="rounded-full px-8"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  Meet your future self
-                  <ArrowRight />
-                </>
-              )}
-            </Button>
-          </motion.div>
+              {/* Submit */}
+              <Button
+                type="submit"
+                disabled={!situation.trim() || isProcessing}
+                size="lg"
+                className="rounded-full px-8 mx-auto"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Meet your future self</span>
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </motion.section>
         )}
 
         {/* Step 3: Processing */}
         {step === "processing" && (
-          <motion.div
-            key="processing"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={spring}
-            className="flex flex-col items-center"
-          >
-            {/* Breathing glow orb */}
-            <div className="relative w-32 h-32 mb-12">
-              <div className="absolute inset-0 rounded-full bg-white/20 animate-breathe" />
-              <div 
-                className="absolute inset-4 rounded-full bg-white/30 animate-breathe" 
-                style={{ animationDelay: "-0.5s" }} 
-              />
-              <div 
-                className="absolute inset-8 rounded-full bg-white/40 animate-breathe" 
-                style={{ animationDelay: "-1s" }} 
-              />
-            </div>
-
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">
-              {processingMessage}
-            </p>
-          </motion.div>
+          <ProcessingOrb key="processing" message={processingMessage} />
         )}
       </AnimatePresence>
-    </main>
+    </PageLayout>
   );
 }

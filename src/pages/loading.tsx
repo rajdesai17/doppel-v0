@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { PageLayout, PageHeader, ProcessingOrb } from "../components/ui";
 
 const LOADING_MESSAGES = [
   "Analyzing voice patterns",
@@ -43,7 +44,10 @@ export function LoadingPage() {
       }
     }, 2000);
 
-    const timeout = setTimeout(() => navigate(`/conversation/${sessionId}`), 15000);
+    const timeout = setTimeout(
+      () => navigate(`/conversation/${sessionId}`),
+      15000
+    );
 
     return () => {
       clearInterval(messageInterval);
@@ -54,34 +58,16 @@ export function LoadingPage() {
   }, [sessionId, navigate]);
 
   return (
-    <main className="h-screen w-full flex flex-col items-center justify-center text-center px-4 bg-black">
-      {/* Breathing circle */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={spring}
-        className="relative w-32 h-32 mb-12"
-      >
-        <div className="absolute inset-0 rounded-full border border-white/20 animate-breathe" />
-        <div 
-          className="absolute inset-4 rounded-full border border-white/30 animate-breathe" 
-          style={{ animationDelay: "-0.5s" }} 
-        />
-        <div 
-          className="absolute inset-8 rounded-full border border-white/40 animate-breathe" 
-          style={{ animationDelay: "-1s" }} 
-        />
-      </motion.div>
+    <PageLayout>
+      {/* Breathing orb */}
+      <ProcessingOrb />
 
       {/* Title */}
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, delay: 0.1 }}
-        className="font-serif text-4xl text-white mb-4"
-      >
-        Creating your future self
-      </motion.h2>
+      <PageHeader
+        title="Creating your future self"
+        animated={false}
+        className="mb-4"
+      />
 
       {/* Status message */}
       <motion.p
@@ -94,21 +80,30 @@ export function LoadingPage() {
       </motion.p>
 
       {/* Progress bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, delay: 0.3 }}
-        className="w-48"
-      >
-        <div className="w-full h-px bg-white/10 rounded-full overflow-hidden mb-3">
-          <motion.div
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="h-full bg-white rounded-full"
-          />
-        </div>
-        <p className="font-mono text-[10px] tracking-[0.3em] text-white/30">{progress}%</p>
-      </motion.div>
-    </main>
+      <ProgressBar progress={progress} />
+    </PageLayout>
+  );
+}
+
+// Progress Bar Component
+function ProgressBar({ progress }: { progress: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.3 }}
+      className="w-48"
+    >
+      <div className="w-full h-px bg-white/10 rounded-full overflow-hidden mb-3">
+        <motion.div
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="h-full bg-white rounded-full"
+        />
+      </div>
+      <p className="font-mono text-[10px] tracking-[0.3em] text-white/30">
+        {progress}%
+      </p>
+    </motion.div>
   );
 }
