@@ -63,12 +63,14 @@ export function SetupPage() {
         throw new Error("Failed to create session");
       }
 
-      const { sessionId, persona } = await sessionResponse.json();
+      const { sessionId, persona, agentId } = (await sessionResponse.json()) as { sessionId: string; persona: any; agentId: string };
 
-      // Save persona for conversation page
-      if (persona) {
-        localStorage.setItem(`doppel_persona_${sessionId}`, JSON.stringify(persona));
-      }
+      // Save session data for conversation page
+      localStorage.setItem(`doppel_session_${sessionId}`, JSON.stringify({
+        persona,
+        agentId,
+        userId,
+      }));
 
       // Navigate to conversation
       navigate(`/conversation/${sessionId}`);

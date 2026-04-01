@@ -30,6 +30,7 @@ type CallableMethod =
   | "getState"
   | "cloneVoice"
   | "initSession"
+  | "getSignedUrl"
   | "addSessionSummary"
   | "getMemory";
 
@@ -52,13 +53,20 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
         topic TEXT,
         summary TEXT,
         persona_json TEXT,
+        agent_id TEXT,
         opening_audio_key TEXT,
         created_at INTEGER NOT NULL
       )
     `;
+
+    // Migrate: add agent_id column if missing (from earlier schema)
+    try {
+      this.sql`ALTER TABLE sessions ADD COLUMN agent_id TEXT`;
+    } catch {
+      // Column already exists — ignore
+    }
   }
 
-  // Initialize state for new users
   initialState: PresentSelfState = {
     userId: "",
     voiceId: null,
@@ -70,7 +78,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
 
   onStateUpdate(
     state: PresentSelfState,
-    source: Connection | "server"
+    _source: Connection | "server"
   ): PresentSelfState {
     return { ...state, lastSeenAt: Date.now() };
   }
@@ -94,7 +102,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
 
     if (request.method === "POST" && method) {
       try {
-        const body = await request.json();
+        const body = (await request.json()) as Record<string, unknown>;
         console.log("[PresentSelfAgent] Calling:", method);
         const result = await this.handleCall(method, body);
         console.log("[PresentSelfAgent]", method, "completed successfully");
@@ -126,6 +134,9 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
           params.yearsAhead as number
         );
 
+      case "getSignedUrl":
+        return this.getSignedUrl(params.agentId as string);
+
       case "addSessionSummary":
         return this.addSessionSummary(
           params.sessionId as string,
@@ -152,7 +163,6 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     console.log("[PresentSelfAgent] cloneVoice: decoded audio size:", audioBuffer.length, "bytes");
     const voiceName = `DOPPEL_${this.state.userId}_${Date.now()}`;
 
-    // Create form data for ElevenLabs API
     const formData = new FormData();
     formData.append("name", voiceName);
     formData.append(
@@ -179,20 +189,21 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     const voiceId = data.voice_id;
     console.log("[PresentSelfAgent] cloneVoice: success, voiceId:", voiceId);
 
-    // Store in SQL
     this.sql`
       INSERT INTO voice_clones (voice_id, voice_name, created_at)
       VALUES (${voiceId}, ${voiceName}, ${Date.now()})
     `;
 
-    // Update state
     this.setState({ ...this.state, voiceId, voiceName });
 
     return { voiceId };
   }
 
   /**
-   * Initialize a new conversation session
+   * Initialize a new conversation session:
+   * 1. Generate persona via Workers AI
+   * 2. Create an ElevenLabs Conversational AI agent
+   * 3. Return session data + agentId for browser-direct connection
    */
   private async initSession(
     situation: string,
@@ -201,7 +212,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
   ): Promise<{
     sessionId: string;
     persona: Persona;
-    openingAudioKey: string | null;
+    agentId: string;
   }> {
     if (!this.state.voiceId) {
       throw new Error("Voice not cloned yet");
@@ -211,34 +222,92 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     const futureAge = userAge + yearsAhead;
     console.log("[PresentSelfAgent] initSession: sessionId:", sessionId, "situation:", situation.slice(0, 50), "age:", userAge, "->", futureAge);
 
-    // Generate persona with Workers AI
+    // Step 1: Generate persona with Workers AI
     const persona = await this.generatePersona(
       situation,
       userAge,
       futureAge,
       yearsAhead
     );
+    console.log("[PresentSelfAgent] initSession: persona generated, creating ElevenLabs agent...");
 
-    // Generate opening dialogue with Text-to-Dialogue API
-    let openingAudioKey: string | null = null;
-    try {
-      openingAudioKey = await this.generateOpeningClip(
-        sessionId,
-        persona,
-        situation
-      );
-    } catch (e) {
-      console.error("Failed to generate opening clip:", e);
-      // Continue without opening — not critical
-    }
+    // Step 2: Create ElevenLabs Conversational AI agent
+    const agentId = await this.createElevenLabsAgent(persona, situation);
+    console.log("[PresentSelfAgent] initSession: ElevenLabs agent created:", agentId);
 
     // Store session in SQL
     this.sql`
-      INSERT INTO sessions (session_id, topic, persona_json, opening_audio_key, created_at)
-      VALUES (${sessionId}, ${situation.slice(0, 200)}, ${JSON.stringify(persona)}, ${openingAudioKey}, ${Date.now()})
+      INSERT INTO sessions (session_id, topic, persona_json, agent_id, created_at)
+      VALUES (${sessionId}, ${situation.slice(0, 200)}, ${JSON.stringify(persona)}, ${agentId}, ${Date.now()})
     `;
 
-    return { sessionId, persona, openingAudioKey };
+    return { sessionId, persona, agentId };
+  }
+
+  /**
+   * Create an ElevenLabs Conversational AI agent with the cloned voice + persona
+   */
+  private async createElevenLabsAgent(
+    persona: Persona,
+    situation: string
+  ): Promise<string> {
+    const response = await fetch("https://api.elevenlabs.io/v1/convai/agents/create", {
+      method: "POST",
+      headers: {
+        "xi-api-key": this.env.ELEVENLABS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        conversation_config: {
+          agent: {
+            prompt: {
+              prompt: persona.systemPrompt,
+            },
+            first_message: persona.openingLine,
+            language: "en",
+          },
+          tts: {
+            voice_id: this.state.voiceId,
+          },
+        },
+        name: `DOPPEL_${situation.slice(0, 30)}_${Date.now()}`,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("[PresentSelfAgent] createElevenLabsAgent failed:", error);
+      throw new Error(`Failed to create ElevenLabs agent: ${error}`);
+    }
+
+    const data = (await response.json()) as { agent_id: string };
+    return data.agent_id;
+  }
+
+  /**
+   * Get a signed URL for browser-direct connection to ElevenLabs ConvAI
+   */
+  private async getSignedUrl(agentId: string): Promise<{ signedUrl: string }> {
+    console.log("[PresentSelfAgent] getSignedUrl for agent:", agentId);
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+      {
+        method: "GET",
+        headers: {
+          "xi-api-key": this.env.ELEVENLABS_API_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to get signed URL: ${error}`);
+    }
+
+    const data = (await response.json()) as { signed_url: string };
+    console.log("[PresentSelfAgent] getSignedUrl: success");
+    return { signedUrl: data.signed_url };
   }
 
   /**
@@ -282,7 +351,7 @@ The future self should:
 
 Return ONLY valid JSON, no markdown.`;
 
-    const response = await this.env.AI.run("@cf/meta/llama-3.1-70b-instruct", {
+    const response = await (this.env.AI as any).run("@cf/meta/llama-3.1-70b-instruct", {
       prompt,
       max_tokens: 1000,
     });
@@ -294,7 +363,6 @@ Return ONLY valid JSON, no markdown.`;
           : (response as { response?: string }).response ?? "";
       return JSON.parse(text) as Persona;
     } catch {
-      // Fallback persona if parsing fails
       return {
         name: "Future You",
         age: futureAge,
@@ -311,91 +379,23 @@ Return ONLY valid JSON, no markdown.`;
     }
   }
 
-  /**
-   * Generate cinematic opening clip with Text-to-Dialogue
-   */
-  private async generateOpeningClip(
-    sessionId: string,
-    persona: Persona,
-    situation: string
-  ): Promise<string> {
-    const voiceId = this.state.voiceId!;
-
-    // Build dialogue script using "inputs" format
-    const inputs = [
-      {
-        voice_id: voiceId,
-        text: `I've been thinking a lot about ${situation.split(" ").slice(0, 5).join(" ")}...`,
-      },
-      {
-        voice_id: voiceId,
-        text: persona.openingLine,
-      },
-      {
-        voice_id: voiceId,
-        text: "Wait — how do you know about that?",
-      },
-      {
-        voice_id: voiceId,
-        text: `Because I was you, ${persona.yearsAhead} years ago. And I need to tell you something.`,
-      },
-    ];
-
-    const response = await fetch(
-      "https://api.elevenlabs.io/v1/text-to-dialogue",
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": this.env.ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs,
-          model_id: "eleven_v3",
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Text-to-Dialogue failed: ${await response.text()}`);
-    }
-
-    // Upload audio to R2
-    const audioBuffer = await response.arrayBuffer();
-    const audioKey = `sessions/${sessionId}/opening.mp3`;
-
-    await this.env.AUDIO_BUCKET.put(audioKey, audioBuffer, {
-      httpMetadata: { contentType: "audio/mpeg" },
-    });
-
-    return audioKey;
-  }
-
-  /**
-   * Add session summary after conversation ends
-   */
   private async addSessionSummary(
     sessionId: string,
     topic: string,
     summary: string
   ): Promise<void> {
-    // Update SQL
     this.sql`
       UPDATE sessions SET summary = ${summary} WHERE session_id = ${sessionId}
     `;
 
-    // Update state
     const sessions = [
       ...this.state.sessions,
       { sessionId, topic, summary, createdAt: Date.now() },
-    ].slice(-10); // Keep last 10
+    ].slice(-10);
 
     this.setState({ ...this.state, sessions });
   }
 
-  /**
-   * Get memory context for returning users
-   */
   private getMemory(): SessionSummary[] {
     return this.state.sessions;
   }

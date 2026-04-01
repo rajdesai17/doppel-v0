@@ -12,6 +12,7 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@elevenlabs/client": "^1.1.0",
     "agents": "^0.0.98",
     "agents-sdk": "^0.0.17",
     "clsx": "^2.1.1",

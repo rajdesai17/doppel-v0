@@ -58,7 +58,7 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
     endedAt: null,
   };
 
-  onConnect(connection: Connection, ctx: ConnectionContext): void {
+  onConnect(connection: Connection, _ctx: ConnectionContext): void {
     console.log("[FutureSelfAgent] onConnect, name:", this.name);
     this.browserConnection = connection;
     connection.send(JSON.stringify({ type: "connected", state: this.state }));
@@ -130,8 +130,7 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
         },
       });
 
-      // @ts-expect-error - Cloudflare Workers WebSocket API
-      const ws = response.webSocket as WebSocket;
+      const ws = (response as any).webSocket as WebSocket;
       if (!ws) {
         throw new Error("Failed to establish WebSocket connection");
       }
@@ -338,7 +337,7 @@ export class FutureSelfAgent extends Agent<Env, FutureSelfState> {
       .map((e) => `${e.speaker === "user" ? "Present" : "Future"}: ${e.text}`)
       .join("\n");
 
-    const response = await this.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+    const response = await (this.env.AI as any).run("@cf/meta/llama-3.1-8b-instruct", {
       prompt: `Summarize this conversation between someone and their future self in 2-3 sentences. Focus on the key insights and emotional moments.\n\n${transcriptText}`,
       max_tokens: 200,
     });

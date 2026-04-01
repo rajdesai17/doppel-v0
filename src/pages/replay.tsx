@@ -21,7 +21,7 @@ export function ReplayPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTime, _setCurrentTime] = useState(0);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function ReplayPage() {
         if (!response.ok) {
           throw new Error("Replay not found");
         }
-        const replayData = await response.json();
+        const replayData = (await response.json()) as ReplayData;
         setData(replayData);
       } catch (e) {
         setError((e as Error).message);

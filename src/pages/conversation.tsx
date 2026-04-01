@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Phone, PhoneOff, Mic, MicOff, ArrowLeft } from "lucide-react";
-import { cn, getUserId, blobToBase64 } from "../lib/utils";
+import { Conversation } from "@elevenlabs/client";
+import { cn } from "../lib/utils";
 
 interface TranscriptEntry {
   speaker: "user" | "future";
@@ -21,274 +22,157 @@ export function ConversationPage() {
   const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(
     null
   );
-  const [audioLevels, setAudioLevels] = useState({ user: 0, future: 0 });
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyzerRef = useRef<AnalyserNode | null>(null);
-  const audioQueueRef = useRef<ArrayBuffer[]>([]);
-  const isPlayingRef = useRef(false);
+  const conversationRef = useRef<Conversation | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
-  const isMutedRef = useRef(false);
-  const animFrameRef = useRef<number | null>(null);
-
-  // Keep mute ref in sync
-  useEffect(() => {
-    isMutedRef.current = isMuted;
-  }, [isMuted]);
 
   // Scroll transcript to bottom
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcript]);
 
-  // Play audio queue
-  const playNextAudio = useCallback(async () => {
-    if (isPlayingRef.current || audioQueueRef.current.length === 0) return;
-
-    isPlayingRef.current = true;
-    const audioData = audioQueueRef.current.shift()!;
-
-    try {
-      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-        audioContextRef.current = new AudioContext();
-      }
-      if (audioContextRef.current.state === "suspended") {
-        await audioContextRef.current.resume();
-      }
-
-      console.log("[conversation] Decoding audio chunk, size:", audioData.byteLength);
-      const audioBuffer =
-        await audioContextRef.current.decodeAudioData(audioData);
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-
-      source.onended = () => {
-        isPlayingRef.current = false;
-        setActiveSpeaker(null);
-        playNextAudio();
-      };
-
-      setActiveSpeaker("future");
-      source.start();
-      console.log("[conversation] Playing audio, duration:", audioBuffer.duration.toFixed(2), "s");
-    } catch (e) {
-      console.error("[conversation] Audio playback error:", e);
-      isPlayingRef.current = false;
-      playNextAudio();
-    }
-  }, []);
-
-  // Connect to agent WebSocket — only depends on sessionId
+  // Connect to ElevenLabs ConvAI directly from browser
   useEffect(() => {
     if (!sessionId) return;
 
-    const userId = getUserId();
-    const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/agents/future-self-agent/${sessionId}`;
+    let cancelled = false;
 
-    console.log("[conversation] Connecting WebSocket:", wsUrl);
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("[conversation] WebSocket connected");
-      setStatus("connected");
-
-      // Get session config from PresentSelfAgent
-      console.log("[conversation] Fetching session config for user:", userId);
-      fetch(`/agents/present-self-agent/${userId}?method=getState`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      })
-        .then((r) => r.json())
-        .then((state) => {
-          console.log("[conversation] Got state, voiceId:", state.voiceId, "sessions:", state.sessions?.length);
-
-          // Look for persona in localStorage (saved during setup)
-          const savedPersona = localStorage.getItem(`doppel_persona_${sessionId}`);
-          const systemPrompt = savedPersona
-            ? JSON.parse(savedPersona).systemPrompt
-            : "You are the user's future self, 10 years older. Speak with warmth and earned wisdom.";
-
-          console.log("[conversation] Starting conversation with voiceId:", state.voiceId);
-          ws.send(
-            JSON.stringify({
-              type: "start_conversation",
-              config: {
-                sessionId,
-                voiceId: state.voiceId,
-                systemPrompt,
-              },
-            })
-          );
-        })
-        .catch((e) => {
-          console.error("[conversation] Failed to get session config:", e);
-          setStatus("error");
-        });
-    };
-
-    ws.onmessage = (event) => {
+    const startConversation = async () => {
       try {
-        const data = JSON.parse(event.data);
-        console.log("[conversation] WS message:", data.type);
-
-        switch (data.type) {
-          case "connected":
-            console.log("[conversation] Agent connected, state:", data.state?.status);
-            break;
-
-          case "conversation_started":
-            console.log("[conversation] Conversation started, beginning mic stream");
-            startMicrophoneStream();
-            break;
-
-          case "audio": {
-            const audioBytes = Uint8Array.from(atob(data.audio), (c) =>
-              c.charCodeAt(0)
-            );
-            console.log("[conversation] Received audio chunk:", audioBytes.length, "bytes");
-            audioQueueRef.current.push(audioBytes.buffer);
-            playNextAudio();
-            break;
-          }
-
-          case "transcript":
-            console.log("[conversation] Transcript:", data.entry?.speaker, data.entry?.text?.slice(0, 50));
-            setTranscript((prev) => [...prev, data.entry]);
-            break;
-
-          case "interruption":
-            audioQueueRef.current = [];
-            isPlayingRef.current = false;
-            setActiveSpeaker(null);
-            break;
-
-          case "conversation_ended":
-            console.log("[conversation] Conversation ended, navigating to replay");
-            setStatus("disconnected");
-            navigate(`/replay/${data.sessionId}`);
-            break;
-
-          case "error":
-            console.error("[conversation] Agent error:", data.message);
-            setStatus("error");
-            break;
-
-          case "elevenlabs_event":
-            console.log("[conversation] ElevenLabs event:", data.event?.type);
-            break;
+        // Get session data from localStorage (saved during setup)
+        const sessionData = localStorage.getItem(`doppel_session_${sessionId}`);
+        if (!sessionData) {
+          console.error("[conversation] No session data found for:", sessionId);
+          setStatus("error");
+          return;
         }
+
+        const { agentId, userId } = JSON.parse(sessionData);
+        console.log("[conversation] Starting with agentId:", agentId);
+
+        // Get signed URL from server (keeps API key server-side)
+        console.log("[conversation] Fetching signed URL...");
+        const signedUrlRes = await fetch(
+          `/agents/present-self-agent/${userId}?method=getSignedUrl`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ agentId }),
+          }
+        );
+
+        if (!signedUrlRes.ok) {
+          const errData = await signedUrlRes.text();
+          throw new Error(errData || "Failed to get signed URL");
+        }
+
+        const { signedUrl } = (await signedUrlRes.json()) as { signedUrl: string };
+        console.log("[conversation] Got signed URL, connecting...");
+
+        if (cancelled) return;
+
+        // Pre-request microphone so the SDK can use it
+        try {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log("[conversation] Microphone access granted, tracks:", micStream.getAudioTracks().map(t => t.label));
+          // Stop the stream — SDK will create its own
+          micStream.getTracks().forEach(t => t.stop());
+        } catch (micErr) {
+          console.error("[conversation] Microphone access DENIED:", micErr);
+          setStatus("error");
+          return;
+        }
+
+        // Connect directly to ElevenLabs from browser
+        const conversation = await Conversation.startSession({
+          signedUrl,
+          onConnect: ({ conversationId }) => {
+            console.log("[conversation] Connected to ElevenLabs:", conversationId);
+            setStatus("connected");
+          },
+          onDisconnect: () => {
+            console.log("[conversation] Disconnected from ElevenLabs");
+            setStatus("disconnected");
+          },
+          onMessage: (message) => {
+            console.log("[conversation] Message:", message.role, message.message);
+            setTranscript((prev) => [
+              ...prev,
+              {
+                speaker: message.role === "agent" ? "future" : "user",
+                text: message.message,
+                timestamp: Date.now(),
+              },
+            ]);
+          },
+          onError: (error) => {
+            console.error("[conversation] ElevenLabs error:", error);
+            setStatus("error");
+          },
+          onModeChange: (mode) => {
+            console.log("[conversation] Mode changed:", mode);
+            if (mode.mode === "speaking") {
+              setActiveSpeaker("future");
+            } else if (mode.mode === "listening") {
+              setActiveSpeaker("user");
+            } else {
+              setActiveSpeaker(null);
+            }
+          },
+          onStatusChange: ({ status }) => {
+            console.log("[conversation] Status changed:", status);
+          },
+          onDebug: (props) => {
+            console.log("[conversation] Debug:", props);
+          },
+        });
+
+        if (cancelled) {
+          await conversation.endSession();
+          return;
+        }
+
+        conversationRef.current = conversation;
+        console.log("[conversation] Session started successfully");
       } catch (e) {
-        console.error("[conversation] WS message parse error:", e);
+        console.error("[conversation] Failed to start:", e);
+        if (!cancelled) setStatus("error");
       }
     };
 
-    ws.onerror = (e) => {
-      console.error("[conversation] WebSocket error:", e);
-      setStatus("error");
-    };
-
-    ws.onclose = (e) => {
-      console.log("[conversation] WebSocket closed, code:", e.code, "reason:", e.reason);
-      setStatus("disconnected");
-    };
+    startConversation();
 
     return () => {
-      console.log("[conversation] Cleanup: closing WebSocket");
-      ws.close();
-      if (mediaRecorderRef.current?.state === "recording") {
-        mediaRecorderRef.current.stop();
-      }
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
+      cancelled = true;
+      if (conversationRef.current) {
+        console.log("[conversation] Cleanup: ending session");
+        conversationRef.current.endSession();
+        conversationRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  // Start streaming microphone to agent
-  const startMicrophoneStream = async () => {
-    try {
-      console.log("[conversation] Requesting microphone access");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("[conversation] Microphone access granted");
-
-      // Setup analyzer for visualization
-      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
-        audioContextRef.current = new AudioContext();
-      }
-      analyzerRef.current = audioContextRef.current.createAnalyser();
-      analyzerRef.current.fftSize = 256;
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyzerRef.current);
-
-      // Setup recorder
-      const mimeType = [
-        "audio/webm;codecs=opus",
-        "audio/webm",
-        "audio/ogg;codecs=opus",
-        "audio/mp4",
-      ].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
-
-      console.log("[conversation] Recording MIME type:", mimeType || "default");
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        ...(mimeType ? { mimeType } : {}),
-      });
-
-      mediaRecorder.ondataavailable = async (e) => {
-        if (e.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN && !isMutedRef.current) {
-          const base64 = await blobToBase64(e.data);
-          wsRef.current.send(
-            JSON.stringify({
-              type: "audio_chunk",
-              audio: base64,
-            })
-          );
-        }
-      };
-
-      mediaRecorder.start(100); // Send chunks every 100ms
-      mediaRecorderRef.current = mediaRecorder;
-      console.log("[conversation] Microphone streaming started");
-
-      // Update audio levels visualization
-      const updateLevels = () => {
-        if (analyzerRef.current) {
-          const dataArray = new Uint8Array(
-            analyzerRef.current.frequencyBinCount
-          );
-          analyzerRef.current.getByteFrequencyData(dataArray);
-          const avg =
-            dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
-          setAudioLevels((prev) => ({ ...prev, user: avg }));
-        }
-        animFrameRef.current = requestAnimationFrame(updateLevels);
-      };
-      updateLevels();
-    } catch (e) {
-      console.error("[conversation] Microphone access error:", e);
-      setStatus("error");
-    }
-  };
-
   // End conversation
-  const endConversation = () => {
+  const endConversation = useCallback(async () => {
     console.log("[conversation] User ended conversation");
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "end_conversation" }));
+    if (conversationRef.current) {
+      await conversationRef.current.endSession();
+      conversationRef.current = null;
     }
     setStatus("disconnected");
-  };
+    navigate(`/replay/${sessionId}`);
+  }, [sessionId, navigate]);
 
   // Toggle mute
-  const toggleMute = () => {
-    setIsMuted((prev) => !prev);
-  };
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const newMuted = !prev;
+      if (conversationRef.current) {
+        conversationRef.current.setMicMuted(newMuted);
+      }
+      return newMuted;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-950">
@@ -331,11 +215,8 @@ export function ConversationPage() {
             <div
               className={cn(
                 "size-32 rounded-full bg-zinc-800 flex items-center justify-center transition-all duration-150",
-                activeSpeaker === "user" && "ring-4 ring-violet-500/50"
+                activeSpeaker === "user" && "ring-4 ring-violet-500/50 scale-105"
               )}
-              style={{
-                transform: `scale(${1 + audioLevels.user * 0.2})`,
-              }}
             >
               <div className="size-20 rounded-full bg-zinc-700 flex items-center justify-center text-2xl">
                 {isMuted ? (
@@ -355,11 +236,8 @@ export function ConversationPage() {
             <div
               className={cn(
                 "size-32 rounded-full bg-violet-900/30 flex items-center justify-center transition-all duration-150",
-                activeSpeaker === "future" && "ring-4 ring-violet-500"
+                activeSpeaker === "future" && "ring-4 ring-violet-500 scale-105"
               )}
-              style={{
-                transform: `scale(${1 + audioLevels.future * 0.2})`,
-              }}
             >
               <div className="size-20 rounded-full bg-violet-800/50 flex items-center justify-center">
                 <Phone className="size-8 text-violet-300" />
@@ -378,7 +256,9 @@ export function ConversationPage() {
               <p className="text-sm text-zinc-500 text-center py-8">
                 {status === "connecting"
                   ? "Connecting to your future self..."
-                  : "Start speaking to begin the conversation."}
+                  : status === "error"
+                    ? "Failed to connect. Please go back and try again."
+                    : "Start speaking to begin the conversation."}
               </p>
             )}
             {transcript.map((entry, i) => (

@@ -33,7 +33,7 @@ export function LoadingPage() {
       try {
         const response = await fetch(`/api/session/${sessionId}/status`);
         if (response.ok) {
-          const { status } = await response.json();
+          const { status } = (await response.json()) as { status: string };
           if (status === "ready") {
             clearInterval(checkReady);
             setProgress(100);
