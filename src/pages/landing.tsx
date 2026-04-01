@@ -1,140 +1,155 @@
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Mic, Sparkles, Waves } from "lucide-react";
-import { PageFrame, SectionHeading, StatusPill, TopBar } from "../components/chrome";
+import {
+  ArrowRight,
+  AudioLines,
+  Brain,
+  MessageSquare,
+  Mic,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AnimatedContainer, FeatureCard } from "../components/layout";
 
-const STEPS = [
+const FEATURES = [
   {
-    icon: <Mic className="size-4" />,
-    title: "Record your voice",
-    body: "A short, clean sample is enough.",
+    icon: Mic,
+    title: "Voice Cloning",
+    description:
+      "Record a short sample and our AI learns your unique tone, cadence, and speaking patterns.",
   },
   {
-    icon: <Sparkles className="size-4" />,
-    title: "Describe the moment",
-    body: "Give the system the decision you are facing.",
+    icon: Brain,
+    title: "Contextual AI",
+    description:
+      "Describe your crossroads and life situation. The AI builds a future perspective around your goals.",
   },
   {
-    icon: <Waves className="size-4" />,
-    title: "Start the conversation",
-    body: "Speak with a future version of yourself in real time.",
+    icon: MessageSquare,
+    title: "Live Conversation",
+    description:
+      "Speak naturally with your future self in real-time. Ask questions, share doubts, gain clarity.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Private & Secure",
+    description:
+      "Your voice and personal data are processed securely and never stored beyond your session.",
+  },
+  {
+    icon: AudioLines,
+    title: "Natural Audio",
+    description:
+      "Responses are generated in your own cloned voice for an authentic, immersive experience.",
+  },
+  {
+    icon: RotateCcw,
+    title: "Save & Replay",
+    description:
+      "Revisit past conversations anytime. Reflect on the advice your future self shared with you.",
   },
 ];
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen">
-      <TopBar
-        left={<StatusPill label="voice prototype" tone="accent" />}
-        right={
-          <Link
-            to="/setup"
-            className="button-lift inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/85 hover:border-white/16 hover:bg-white/[0.08]"
+    <main className="flex min-h-screen flex-col">
+      {/* Header */}
+      <header className="fixed inset-x-0 top-0 z-50 h-14 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-6">
+          <span className="text-sm font-medium tracking-tight">DOPPEL</span>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/setup">Get Started</Link>
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="flex flex-1 flex-col items-center pt-32">
+        <div className="flex max-w-2xl flex-col items-center text-center">
+          <p className="animate-fade-up text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            A Conversation Across Time
+          </p>
+
+          <h1
+            className="animate-fade-up mb-6 mt-4 text-4xl font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl"
+            style={{ animationDelay: "100ms" }}
           >
-            Begin
-            <ArrowRight className="size-4" />
-          </Link>
-        }
-      />
+            Meet Your Future Self
+          </h1>
 
-      <PageFrame className="pb-16 pt-10 sm:pt-16 lg:pb-20">
-        <section className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_420px] xl:items-center">
-          <div className="max-w-[760px]">
-            <SectionHeading
-              eyebrow="A quieter interface for a personal conversation"
-              title="Speak with the version of you that has already lived through this."
-              description="Doppel turns one short recording and one real dilemma into a focused voice conversation."
-            />
+          <p
+            className="animate-fade-up mb-10 max-w-lg text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg"
+            style={{ animationDelay: "200ms" }}
+          >
+            Clone your voice. Describe your crossroads. Have a real conversation
+            with who you could become — 10 years from now.
+          </p>
 
-            <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-center">
-              <Link
-                to="/setup"
-                className="button-lift inline-flex items-center justify-center gap-2 rounded-full bg-[var(--app-accent)] px-6 py-3.5 text-sm font-semibold text-[#17130d] hover:bg-[var(--app-accent-strong)]"
-              >
-                Start your conversation
-                <ArrowRight className="size-4" />
-              </Link>
-              <p className="max-w-md text-sm leading-7 text-[var(--app-muted)]">
-                30 seconds to record. A few lines of context. Then the conversation begins.
-              </p>
-            </div>
-          </div>
-
-          <div className="surface-card rounded-[2rem] p-6 sm:p-7">
-            <p className="eyebrow mb-4">Session preview</p>
-            <h2 className="text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
-              One clear path in
-            </h2>
-
-            <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-white/88">Voice sample</span>
-                <span className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
-                  step 1
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                {Array.from({ length: 22 }).map((_, index) => (
-                  <span
-                    key={index}
-                    className="audio-wave-bar block w-1 rounded-full bg-[rgba(217,195,154,0.85)]"
-                    style={{
-                      height: `${24 + Math.abs(10 - index) * 2.5}px`,
-                      animationDelay: `${index * 80}ms`,
-                      opacity: 0.48,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
-              <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
-                Future response
-              </p>
-              <p className="mt-3 text-sm leading-7 text-white/88">
-                Calm, direct, and grounded in the context you actually shared.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-14 rounded-[2rem] border border-white/8 bg-black/10 p-5 sm:p-7">
-          <div className="mb-6 max-w-lg">
-            <p className="eyebrow mb-4">How it works</p>
-            <h2 className="font-display text-[clamp(2rem,4vw,3.2rem)] text-white">
-              Minimal flow, readable surfaces.
-            </h2>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {STEPS.map((step) => (
-              <StepCard key={step.title} {...step} />
+          {/* Audio visualization */}
+          <div
+            className="animate-fade-up mb-10 flex h-8 w-48 items-center justify-center gap-1"
+            style={{ animationDelay: "300ms" }}
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <div
+                key={i}
+                className="w-0.5 rounded-full bg-foreground/30 animate-pulse-subtle"
+                style={{
+                  height: `${Math.max(8, Math.sin((i / 24) * Math.PI) * 28)}px`,
+                  animationDelay: `${i * 80}ms`,
+                }}
+              />
             ))}
           </div>
-        </section>
-      </PageFrame>
-    </main>
-  );
-}
 
-function StepCard({
-  icon,
-  title,
-  body,
-}: {
-  icon: ReactNode;
-  title: string;
-  body: string;
-}) {
-  return (
-    <article className="surface-soft rounded-[1.5rem] p-5 sm:p-6">
-      <div className="mb-4 flex size-10 items-center justify-center rounded-2xl bg-white/[0.05] text-[var(--app-accent-strong)]">
-        {icon}
-      </div>
-      <h3 className="text-[1.02rem] font-semibold tracking-[-0.03em] text-white">{title}</h3>
-      <p className="mt-3 text-sm leading-7 text-[var(--app-muted)]">{body}</p>
-    </article>
+          {/* CTA */}
+          <div
+            className="animate-fade-up flex flex-col items-center gap-4 sm:flex-row"
+            style={{ animationDelay: "400ms" }}
+          >
+            <Button
+              size="lg"
+              className="h-11 gap-2 rounded-full px-6 text-sm"
+              asChild
+            >
+              <Link to="/setup">
+                Start your conversation
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Free to try · No account needed
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="mx-auto mt-32 max-w-5xl px-6 pb-20">
+        <AnimatedContainer className="text-center">
+          <h2 className="text-3xl font-bold tracking-wide text-balance md:text-4xl">
+            How It Works
+          </h2>
+          <p className="mt-2 text-sm tracking-wide text-pretty text-muted-foreground">
+            Three steps to a conversation with your future self
+          </p>
+        </AnimatedContainer>
+
+        <AnimatedContainer delay={0.4} className="mt-12">
+          <div className="grid grid-cols-1 border border-dashed sm:grid-cols-2 md:grid-cols-3 [&>*]:border-b [&>*]:border-r [&>*]:border-dashed">
+            {FEATURES.map((f) => (
+              <FeatureCard key={f.title} {...f} />
+            ))}
+          </div>
+        </AnimatedContainer>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-6">
+        <p className="text-center text-xs text-muted-foreground">
+          Built with AI voice synthesis technology
+        </p>
+      </footer>
+    </main>
   );
 }

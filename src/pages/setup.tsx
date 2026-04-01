@@ -1,13 +1,23 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Loader2, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { VoiceRecorder } from "../components/voice-recorder";
-import { PageFrame, SectionHeading, StatusPill, TopBar } from "../components/chrome";
-import { blobToBase64, getUserId } from "../lib/utils";
+import { blobToBase64, cn, getUserId } from "../lib/utils";
 
 type Step = "voice" | "situation" | "processing";
 
-const STEP_LABELS = ["Voice", "Context", "Create"];
+const STEP_LABELS = ["Voice", "Details", "Create"];
 
 export function SetupPage() {
   const navigate = useNavigate();
@@ -17,9 +27,12 @@ export function SetupPage() {
   const [age, setAge] = useState(25);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [processingMessage, setProcessingMessage] = useState("Analyzing your voice...");
+  const [processingMessage, setProcessingMessage] = useState(
+    "Analyzing your voice..."
+  );
 
-  const currentStepIndex = step === "voice" ? 0 : step === "situation" ? 1 : 2;
+  const currentStep =
+    step === "voice" ? 1 : step === "situation" ? 2 : 3;
 
   const handleVoiceRecorded = (blob: Blob) => {
     setAudioBlob(blob);
@@ -36,7 +49,7 @@ export function SetupPage() {
     const messages = [
       "Analyzing your voice...",
       "Creating voice clone...",
-      "Building your future persona...",
+      "Generating future persona...",
     ];
 
     let messageIndex = 0;
@@ -79,12 +92,13 @@ export function SetupPage() {
         throw new Error("Session creation failed. Please try again.");
       }
 
-      const { sessionId, persona, agentId, voiceId } = (await sessionResponse.json()) as {
-        sessionId: string;
-        persona: unknown;
-        agentId: string;
-        voiceId: string;
-      };
+      const { sessionId, persona, agentId, voiceId } =
+        (await sessionResponse.json()) as {
+          sessionId: string;
+          persona: unknown;
+          agentId: string;
+          voiceId: string;
+        };
 
       localStorage.setItem(
         `doppel_session_${sessionId}`,
@@ -102,166 +116,185 @@ export function SetupPage() {
   };
 
   return (
-    <main className="min-h-screen">
-      <TopBar
-        left={
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 hover:border-white/16 hover:bg-white/[0.08]"
-          >
-            <ArrowLeft className="size-4" />
-            Back
-          </Link>
-        }
-        right={<StatusPill label={`step ${currentStepIndex + 1} of 3`} tone="neutral" />}
-      />
+    <main className="flex min-h-screen flex-col">
+      {/* Header */}
+      <header className="fixed inset-x-0 top-0 z-50 h-14 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-6">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft data-icon="inline-start" />
+              Back
+            </Link>
+          </Button>
+          <span className="text-sm font-medium tracking-tight">DOPPEL</span>
+          <div className="w-16" />
+        </div>
+      </header>
 
-      <PageFrame className="pb-16 pt-8 sm:pt-10">
-        <section className="surface-card mx-auto max-w-[1160px] rounded-[2rem] p-6 sm:p-8 lg:p-10">
-          <div className="mb-8 flex flex-col gap-6 border-b border-white/8 pb-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-xl">
-              <p className="eyebrow mb-4">Session setup</p>
-              <h1 className="font-display text-[clamp(2.2rem,4.5vw,4rem)] text-white">
-                A simpler setup flow.
-              </h1>
-              <p className="mt-4 text-[0.98rem] leading-8 text-[var(--app-muted)]">
-                One action at a time, fewer panels, and enough space to read comfortably.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {STEP_LABELS.map((label, index) => (
-                <div
-                  key={label}
-                  className={[
-                    "rounded-full border px-4 py-2 text-sm",
-                    index === currentStepIndex
-                      ? "border-[rgba(217,195,154,0.22)] bg-[rgba(217,195,154,0.12)] text-[var(--app-accent-strong)]"
-                      : "border-white/8 bg-white/[0.03] text-white/60",
-                  ].join(" ")}
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {step === "voice" ? (
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
-              <div className="max-w-[420px]">
-                <SectionHeading
-                  eyebrow="Voice capture"
-                  title="Record one clear sample."
-                  description="Speak naturally for 30 seconds. You can listen back before continuing."
-                />
-
-                <div className="mt-8 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
-                  <div className="mb-3 flex items-center gap-2 text-[var(--app-accent-strong)]">
-                    <LockKeyhole className="size-4" />
-                    <span className="text-sm font-medium">Private by default</span>
+      {/* Step indicator */}
+      <div className="fixed inset-x-0 top-14 z-50 flex h-12 items-center justify-center border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="flex items-center gap-8">
+          {STEP_LABELS.map((label, i) => {
+            const stepNum = i + 1;
+            const isActive = stepNum === currentStep;
+            const isCompleted = stepNum < currentStep;
+            return (
+              <Fragment key={label}>
+                {i > 0 && <div className="h-px w-8 bg-border" />}
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "flex size-6 items-center justify-center rounded-full text-xs",
+                      isCompleted &&
+                        "bg-foreground text-background",
+                      isActive && "border-2 border-foreground",
+                      !isActive &&
+                        !isCompleted &&
+                        "border border-border"
+                    )}
+                  >
+                    {isCompleted && <Check className="size-3" />}
                   </div>
-                  <p className="text-sm leading-7 text-[var(--app-muted)]">
-                    Your recording is only used to create the voice and session for this flow.
-                  </p>
-                </div>
-              </div>
-
-              <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
-            </div>
-          ) : null}
-
-          {step === "situation" ? (
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] lg:items-start">
-              <div className="max-w-[420px]">
-                <SectionHeading
-                  eyebrow="Context"
-                  title="What are you trying to decide?"
-                  description="Write the decision, the tension, and what feels uncertain."
-                />
-
-                <p className="mt-6 text-sm leading-7 text-[var(--app-muted)]">
-                  Short, specific context works better than long exposition.
-                </p>
-              </div>
-
-              <div className="space-y-5">
-                {error ? (
-                  <div className="rounded-[1.4rem] border border-rose-300/16 bg-rose-300/8 px-4 py-4">
-                    <p className="text-sm leading-7 text-rose-100">{error}</p>
-                  </div>
-                ) : null}
-
-                <label className="block">
-                  <span className="mb-3 block text-sm font-medium text-white/90">Your age</span>
-                  <input
-                    type="number"
-                    value={age}
-                    onChange={(event) => setAge(parseInt(event.target.value, 10) || 25)}
-                    min={18}
-                    max={80}
-                    className="min-h-[3.25rem] w-full rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 text-base text-white outline-none focus:border-[rgba(217,195,154,0.28)] focus:bg-white/[0.06]"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-3 block text-sm font-medium text-white/90">
-                    Your situation
+                  <span
+                    className={cn(
+                      "text-xs",
+                      isActive || isCompleted
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {label}
                   </span>
-                  <textarea
-                    value={situation}
-                    onChange={(event) => setSituation(event.target.value)}
-                    placeholder="I am deciding whether to stay where I am, or take the risk and build something of my own."
-                    rows={7}
-                    className="min-h-[240px] w-full rounded-[1.2rem] border border-white/10 bg-white/[0.04] px-4 py-4 text-base leading-8 text-white outline-none placeholder:text-white/30 focus:border-[rgba(217,195,154,0.28)] focus:bg-white/[0.06]"
-                  />
-                </label>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={!situation.trim() || isProcessing}
-                  className="button-lift flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-[1rem] bg-[var(--app-accent)] px-5 py-3 text-sm font-semibold text-[#17130d] hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-[var(--app-accent)]"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Creating session
-                    </>
-                  ) : (
-                    <>
-                      Meet your future self
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {step === "processing" ? (
-            <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
-              <div className="relative mb-10 flex size-36 items-center justify-center">
-                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(217,195,154,0.18),transparent_72%)] blur-3xl" />
-                <div className="absolute inset-3 rounded-full border border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.07)] animate-breathe" />
-                <div
-                  className="absolute inset-7 rounded-full border border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.08)] animate-breathe"
-                  style={{ animationDelay: "220ms" }}
-                />
-                <div className="relative flex size-[4.5rem] items-center justify-center rounded-full bg-[var(--app-accent)] text-[#17130d]">
-                  <Loader2 className="size-6 animate-spin" />
                 </div>
-              </div>
+              </Fragment>
+            );
+          })}
+        </div>
+      </div>
 
-              <p className="eyebrow mb-4">Preparing the conversation</p>
-              <h2 className="font-display text-[clamp(2.2rem,4vw,3.8rem)] text-white">
-                Building your future self.
+      {/* Content */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pt-[6.5rem] pb-12">
+        <AnimatePresence mode="wait">
+          {step === "voice" && (
+            <motion.div
+              key="voice"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-md text-center"
+            >
+              <h2 className="mb-2 text-2xl font-semibold tracking-tight">
+                Record your voice
               </h2>
-              <p className="mt-5 max-w-xl text-[0.98rem] leading-8 text-[var(--app-muted)]">
+              <p className="mb-8 text-sm text-muted-foreground">
+                Speak naturally for 30 seconds to create your voice clone
+              </p>
+              <VoiceRecorder
+                onRecordingComplete={handleVoiceRecorded}
+                duration={30}
+              />
+            </motion.div>
+          )}
+
+          {step === "situation" && (
+            <motion.div
+              key="situation"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-md"
+            >
+              <Card className="border-border/50">
+                <CardHeader className="text-center">
+                  <CardTitle>Tell us about yourself</CardTitle>
+                  <CardDescription>
+                    Describe a decision or crossroads you're facing
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex flex-col gap-5">
+                    {error && (
+                      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+                        <p className="text-sm text-destructive">{error}</p>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">
+                        Your current age
+                      </label>
+                      <Input
+                        type="number"
+                        value={age}
+                        onChange={(e) =>
+                          setAge(parseInt(e.target.value, 10) || 25)
+                        }
+                        min={18}
+                        max={80}
+                        className="h-10 max-w-[100px]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">
+                        Your situation
+                      </label>
+                      <Textarea
+                        value={situation}
+                        onChange={(e) => setSituation(e.target.value)}
+                        placeholder="I'm deciding whether to leave my job and start something on my own..."
+                        rows={4}
+                        className="resize-none"
+                      />
+                    </div>
+
+                    <Button
+                      size="lg"
+                      className="mt-2 h-11 w-full gap-2"
+                      onClick={handleSubmit}
+                      disabled={!situation.trim() || isProcessing}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          Meet your future self
+                          <ArrowRight data-icon="inline-end" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {step === "processing" && (
+            <motion.div
+              key="processing"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col items-center text-center"
+            >
+              <div className="flex size-16 items-center justify-center rounded-full border border-border bg-secondary">
+                <Loader2 className="size-6 animate-spin" />
+              </div>
+              <p className="mt-6 text-lg font-medium">
                 {processingMessage}
               </p>
-            </div>
-          ) : null}
-        </section>
-      </PageFrame>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This usually takes about 30 seconds
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </main>
   );
 }

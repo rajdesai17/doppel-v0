@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Mic, MicOff, PhoneOff, Waves } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff } from "lucide-react";
 import { Conversation } from "@elevenlabs/client";
-import { PageFrame, StatusPill, TopBar } from "../components/chrome";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "../lib/utils";
 
 interface TranscriptEntry {
@@ -21,7 +22,9 @@ export function ConversationPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
-  const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(null);
+  const [activeSpeaker, setActiveSpeaker] = useState<
+    "user" | "future" | null
+  >(null);
   const [elapsed, setElapsed] = useState(0);
 
   const conversationRef = useRef<Conversation | null>(null);
@@ -30,12 +33,10 @@ export function ConversationPage() {
 
   useEffect(() => {
     if (status !== "connected") return;
-
     const startedAt = Date.now();
     timerRef.current = window.setInterval(() => {
       setElapsed(Math.floor((Date.now() - startedAt) / 1000));
     }, 1000);
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -47,12 +48,13 @@ export function ConversationPage() {
 
   useEffect(() => {
     if (!sessionId) return;
-
     let cancelled = false;
 
-    const startConversation = async () => {
+    const start = async () => {
       try {
-        const sessionData = localStorage.getItem(`doppel_session_${sessionId}`);
+        const sessionData = localStorage.getItem(
+          `doppel_session_${sessionId}`
+        );
         if (!sessionData) {
           setStatus("error");
           return;
@@ -60,7 +62,7 @@ export function ConversationPage() {
 
         const { userId, persona, voiceId } = JSON.parse(sessionData);
 
-        const signedUrlResponse = await fetch(
+        const res = await fetch(
           `/agents/present-self-agent/${userId}?method=getSignedUrl`,
           {
             method: "POST",
@@ -69,17 +71,16 @@ export function ConversationPage() {
           }
         );
 
-        if (!signedUrlResponse.ok) {
-          throw new Error("Signed URL request failed.");
-        }
+        if (!res.ok) throw new Error("Signed URL request failed.");
 
-        const { signedUrl } = (await signedUrlResponse.json()) as { signedUrl: string };
-
+        const { signedUrl } = (await res.json()) as { signedUrl: string };
         if (cancelled) return;
 
         try {
-          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          micStream.getTracks().forEach((track) => track.stop());
+          const mic = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          mic.getTracks().forEach((t) => t.stop());
         } catch {
           setStatus("error");
           return;
@@ -97,8 +98,8 @@ export function ConversationPage() {
           onConnect: () => setStatus("connected"),
           onDisconnect: () => setStatus("disconnected"),
           onMessage: (message) => {
-            setTranscript((current) => [
-              ...current,
+            setTranscript((t) => [
+              ...t,
               {
                 speaker: message.role === "agent" ? "future" : "user",
                 text: message.message,
@@ -108,17 +109,9 @@ export function ConversationPage() {
           },
           onError: () => setStatus("error"),
           onModeChange: (mode) => {
-            if (mode.mode === "speaking") {
-              setActiveSpeaker("future");
-              return;
-            }
-
-            if (mode.mode === "listening") {
-              setActiveSpeaker("user");
-              return;
-            }
-
-            setActiveSpeaker(null);
+            if (mode.mode === "speaking") setActiveSpeaker("future");
+            else if (mode.mode === "listening") setActiveSpeaker("user");
+            else setActiveSpeaker(null);
           },
         });
 
@@ -133,14 +126,12 @@ export function ConversationPage() {
       }
     };
 
-    startConversation();
+    start();
 
     return () => {
       cancelled = true;
-      if (conversationRef.current) {
-        conversationRef.current.endSession();
-        conversationRef.current = null;
-      }
+      conversationRef.current?.endSession();
+      conversationRef.current = null;
     };
   }, [sessionId]);
 
@@ -149,235 +140,201 @@ export function ConversationPage() {
       await conversationRef.current.endSession();
       conversationRef.current = null;
     }
-
     setStatus("disconnected");
     navigate(`/replay/${sessionId}`);
   }, [navigate, sessionId]);
 
   const toggleMute = useCallback(() => {
-    setIsMuted((current) => {
-      const nextValue = !current;
-      conversationRef.current?.setMicMuted(nextValue);
-      return nextValue;
+    setIsMuted((m) => {
+      const next = !m;
+      conversationRef.current?.setMicMuted(next);
+      return next;
     });
   }, []);
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const wholeSeconds = seconds % 60;
-    return `${minutes}:${wholeSeconds.toString().padStart(2, "0")}`;
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    return `${m}:${(s % 60).toString().padStart(2, "0")}`;
   };
 
-  const statusTone =
-    status === "connected"
-      ? "live"
-      : status === "connecting"
-        ? "warning"
-        : status === "error"
-          ? "danger"
-          : "neutral";
+  const lastFutureMessage =
+    transcript.length > 0 &&
+    transcript[transcript.length - 1].speaker === "future"
+      ? transcript[transcript.length - 1].text
+      : null;
 
   return (
-    <main className="min-h-screen">
-      <TopBar
-        left={
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 hover:border-white/16 hover:bg-white/[0.08]"
-          >
-            Exit
-          </Link>
-        }
-        right={
-          <div className="flex items-center gap-3">
-            <StatusPill label={status} tone={statusTone} />
-            <span className="text-timer text-sm text-[var(--app-muted)]">{formatTime(elapsed)}</span>
-          </div>
-        }
-      />
-
-      <PageFrame className="pb-6 pt-5 sm:pt-6">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="surface-card rounded-[2rem] p-5 sm:p-7">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/8 pb-6">
-              <div>
-                <p className="eyebrow mb-3">Conversation</p>
-                <h1 className="text-[1.2rem] font-semibold tracking-[-0.04em] text-white">
-                  Now speaking with you, 10 years later
-                </h1>
-              </div>
-              <StatusPill
-                label={
-                  activeSpeaker === "future"
-                    ? "future speaking"
-                    : activeSpeaker === "user"
-                      ? "listening"
-                      : "waiting"
-                }
-                tone={activeSpeaker ? "accent" : "neutral"}
-              />
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <SpeakerCard
-                title="You now"
-                subtitle={isMuted ? "Muted" : "Present voice"}
-                active={activeSpeaker === "user"}
-                icon={isMuted ? <MicOff className="size-7" /> : <Mic className="size-7" />}
-                note={
-                  isMuted
-                    ? "Your turns are paused until you unmute."
-                    : activeSpeaker === "user"
-                      ? "The system is listening to you."
-                      : "Waiting for your next turn."
-                }
-              />
-              <SpeakerCard
-                title="You later"
-                subtitle="Future perspective"
-                active={activeSpeaker === "future"}
-                accent
-                icon={<Waves className="size-7" />}
-                note={
-                  activeSpeaker === "future"
-                    ? "This side currently has the floor."
-                    : "Waiting for the next response."
-                }
-              />
-            </div>
-
-            <div className="mt-5 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <p className="text-sm text-[var(--app-muted)]">
-                  Keep the stage clear. Controls stay here, transcript stays separate.
-                </p>
-                <span className="text-timer text-sm text-[var(--app-muted)]">{formatTime(elapsed)}</span>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  onClick={toggleMute}
-                  className={cn(
-                    "button-lift flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[1rem] px-5 py-3 text-sm font-medium",
-                    isMuted
-                      ? "border border-rose-300/18 bg-rose-300/10 text-rose-100 hover:bg-rose-300/16"
-                      : "border border-white/10 bg-white/[0.04] text-white/84 hover:border-white/16 hover:bg-white/[0.08]"
-                  )}
-                >
-                  {isMuted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-                  {isMuted ? "Unmute microphone" : "Mute microphone"}
-                </button>
-                <button
-                  onClick={endConversation}
-                  className="button-lift flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[1rem] bg-rose-300 px-5 py-3 text-sm font-semibold text-[#250d13] hover:bg-rose-200"
-                >
-                  <PhoneOff className="size-4" />
-                  End conversation
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <aside className="surface-card flex min-h-[640px] flex-col overflow-hidden rounded-[2rem]">
-            <div className="border-b border-white/8 px-5 py-5 sm:px-6">
-              <p className="eyebrow mb-3">Transcript</p>
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-white">
-                  Captured in real time
-                </h2>
-                <span className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
-                  {transcript.length}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-              {transcript.length === 0 ? (
-                <div className="surface-soft flex h-full min-h-[260px] items-center justify-center rounded-[1.45rem] px-6 text-center">
-                  <p className="max-w-xs text-sm leading-7 text-[var(--app-muted)]">
-                    {status === "connecting"
-                      ? "Connecting to the live session."
-                      : status === "error"
-                        ? "Connection failed. Go back and try again."
-                        : "Waiting for the conversation to begin."}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {transcript.map((entry, index) => (
-                    <article
-                      key={index}
-                      className={cn(
-                        "rounded-[1.45rem] border px-4 py-4 sm:px-5",
-                        entry.speaker === "future"
-                          ? "border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.08)]"
-                          : "border-white/8 bg-white/[0.05]"
-                      )}
-                    >
-                      <p className="mb-3 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
-                        {entry.speaker === "user" ? "You now" : "You later"}
-                      </p>
-                      <p className="text-[0.98rem] leading-8 text-white/90">{entry.text}</p>
-                    </article>
-                  ))}
-                  <div ref={transcriptEndRef} />
-                </div>
-              )}
-            </div>
-          </aside>
-        </div>
-      </PageFrame>
-    </main>
-  );
-}
-
-function SpeakerCard({
-  title,
-  subtitle,
-  active,
-  icon,
-  note,
-  accent = false,
-}: {
-  title: string;
-  subtitle: string;
-  active: boolean;
-  icon: ReactNode;
-  note: string;
-  accent?: boolean;
-}) {
-  return (
-    <article
-      className={cn(
-        "rounded-[1.7rem] border p-6 sm:p-7",
-        active
-          ? accent
-            ? "border-[rgba(217,195,154,0.2)] bg-[rgba(217,195,154,0.08)]"
-            : "border-white/14 bg-white/[0.06]"
-          : "border-white/8 bg-white/[0.03]"
-      )}
-    >
-      <p className="eyebrow mb-3">{subtitle}</p>
-      <h3 className="text-[1.18rem] font-semibold tracking-[-0.04em] text-white">{title}</h3>
-
-      <div className="flex min-h-[220px] items-center justify-center">
-        <div
-          className={cn(
-            "flex size-28 items-center justify-center rounded-full border sm:size-32",
-            active
-              ? accent
-                ? "border-[rgba(217,195,154,0.22)] bg-[rgba(217,195,154,0.10)] text-[var(--app-accent-strong)]"
-                : "border-white/14 bg-white/[0.08] text-white"
-              : "border-white/8 bg-white/[0.04] text-white/70"
-          )}
+    <main className="flex h-screen flex-col lg:flex-row">
+      {/* Main panel */}
+      <div className="relative flex flex-1 flex-col items-center px-6 pb-24 pt-12">
+        {/* Back */}
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="absolute left-6 top-6"
         >
-          <div className="flex size-16 items-center justify-center rounded-full bg-black/12 sm:size-[4.5rem]">
-            {icon}
+          <Link to="/">
+            <ArrowLeft data-icon="inline-start" />
+            Back
+          </Link>
+        </Button>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Center content */}
+        <div className="flex flex-col items-center">
+          {/* Status */}
+          <div className="mb-8 flex items-center gap-3">
+            {status === "connected" && (
+              <div className="size-2 rounded-full bg-green-500" />
+            )}
+            <span className="text-xs uppercase tracking-wider tabular-nums text-muted-foreground">
+              {formatTime(elapsed)}
+            </span>
           </div>
+
+          {/* Breathing circle */}
+          <div
+            className={cn(
+              "flex size-32 items-center justify-center rounded-full border-2 transition-all duration-500",
+              activeSpeaker === "future" &&
+                "scale-110 border-foreground/50 bg-foreground/5",
+              activeSpeaker === "user" &&
+                "scale-105 border-foreground/30 bg-foreground/5",
+              !activeSpeaker && "border-border"
+            )}
+          >
+            <div
+              className={cn(
+                "size-16 rounded-full transition-all duration-500",
+                activeSpeaker === "future" &&
+                  "animate-pulse bg-foreground/20",
+                activeSpeaker === "user" && "bg-foreground/10",
+                !activeSpeaker && "bg-muted"
+              )}
+            />
+          </div>
+
+          {/* Speaker badge */}
+          <Badge variant="secondary" className="mt-6">
+            {activeSpeaker === "future"
+              ? "Your Future Self"
+              : activeSpeaker === "user"
+                ? "You"
+                : "Waiting..."}
+          </Badge>
+
+          {/* Live transcription */}
+          <AnimatePresence>
+            {activeSpeaker === "future" && lastFutureMessage && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="mt-6 max-w-md text-center text-sm leading-relaxed text-muted-foreground"
+              >
+                {lastFutureMessage}
+                <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-foreground" />
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          {/* User speaking indicator */}
+          <AnimatePresence>
+            {activeSpeaker === "user" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="mt-6 flex items-center gap-1"
+              >
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1 rounded-full bg-foreground/50"
+                    animate={{ height: [8, 24, 8] }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                    }}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Controls */}
+        <div className="flex items-center gap-4 border-t border-border py-6 lg:absolute lg:inset-x-0 lg:bottom-0 lg:justify-center lg:border-0 lg:py-8">
+          <Button
+            variant={isMuted ? "secondary" : "outline"}
+            size="icon-lg"
+            className="rounded-full"
+            onClick={toggleMute}
+          >
+            {isMuted ? <MicOff /> : <Mic />}
+          </Button>
+          <div className="h-8 w-px bg-border" />
+          <Button
+            variant="destructive"
+            size="icon-lg"
+            className="size-14 rounded-full"
+            onClick={endConversation}
+          >
+            <PhoneOff />
+          </Button>
         </div>
       </div>
 
-      <p className="text-sm leading-7 text-[var(--app-muted)]">{note}</p>
-    </article>
+      {/* Transcript sidebar */}
+      <div className="hidden w-80 flex-col border-l border-border lg:flex">
+        <div className="flex h-14 items-center border-b border-border px-4">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Transcript
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          {transcript.length === 0 ? (
+            <p className="pt-8 text-center text-sm text-muted-foreground">
+              {status === "connecting"
+                ? "Connecting..."
+                : status === "error"
+                  ? "Connection failed."
+                  : "Waiting for conversation..."}
+            </p>
+          ) : (
+            transcript.map((entry, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <p className="text-xs font-medium text-muted-foreground">
+                  {entry.speaker === "user" ? "You" : "Future You"}
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 text-sm leading-relaxed",
+                    entry.speaker === "future"
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {entry.text}
+                </p>
+              </motion.div>
+            ))
+          )}
+          <div ref={transcriptEndRef} />
+        </div>
+      </div>
+    </main>
   );
 }
