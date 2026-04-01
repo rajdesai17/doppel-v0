@@ -47,8 +47,8 @@ export function ConversationPage() {
           return;
         }
 
-        const { agentId, userId } = JSON.parse(sessionData);
-        console.log("[conversation] Starting with agentId:", agentId);
+        const { agentId, userId, persona, voiceId } = JSON.parse(sessionData);
+        console.log("[conversation] Starting with agentId:", agentId, "voiceId:", voiceId);
 
         // Get signed URL from server (keeps API key server-side)
         console.log("[conversation] Fetching signed URL...");
@@ -57,7 +57,7 @@ export function ConversationPage() {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ agentId }),
+            body: JSON.stringify({}),
           }
         );
 
@@ -84,8 +84,18 @@ export function ConversationPage() {
         }
 
         // Connect directly to ElevenLabs from browser
+        // Override the shared agent's prompt, first message, and voice per conversation
         const conversation = await Conversation.startSession({
           signedUrl,
+          overrides: {
+            agent: {
+              prompt: { prompt: persona?.systemPrompt },
+              firstMessage: persona?.openingLine,
+            },
+            tts: {
+              voiceId: voiceId,
+            },
+          },
           onConnect: ({ conversationId }) => {
             console.log("[conversation] Connected to ElevenLabs:", conversationId);
             setStatus("connected");

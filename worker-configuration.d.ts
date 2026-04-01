@@ -6,5 +6,6 @@ interface Env {
   PresentSelfAgent: DurableObjectNamespace;
   FutureSelfAgent: DurableObjectNamespace;
   ELEVENLABS_API_KEY: string;
+  ELEVENLABS_AGENT_ID: string;
   ENVIRONMENT: string;
 }

@@ -58,13 +58,6 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
         created_at INTEGER NOT NULL
       )
     `;
-
-    // Migrate: add agent_id column if missing (from earlier schema)
-    try {
-      this.sql`ALTER TABLE sessions ADD COLUMN agent_id TEXT`;
-    } catch {
-      // Column already exists — ignore
-    }
   }
 
   initialState: PresentSelfState = {
@@ -135,7 +128,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
         );
 
       case "getSignedUrl":
-        return this.getSignedUrl(params.agentId as string);
+        return this.getSignedUrl();
 
       case "addSessionSummary":
         return this.addSessionSummary(
@@ -152,9 +145,6 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     }
   }
 
-  /**
-   * Clone user's voice from audio recording
-   */
   private async cloneVoice(audioBase64: string): Promise<{ voiceId: string }> {
     console.log("[PresentSelfAgent] cloneVoice: audio base64 length:", audioBase64.length);
     const audioBuffer = Uint8Array.from(atob(audioBase64), (c) =>
@@ -200,10 +190,10 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
   }
 
   /**
-   * Initialize a new conversation session:
-   * 1. Generate persona via Workers AI
-   * 2. Create an ElevenLabs Conversational AI agent
-   * 3. Return session data + agentId for browser-direct connection
+   * Initialize a conversation session:
+   * 1. Generate persona via Workers AI (or fallback)
+   * 2. Return session data — uses the single shared ElevenLabs agent from env
+   *    Frontend overrides prompt/voice per conversation via SDK
    */
   private async initSession(
     situation: string,
@@ -213,6 +203,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     sessionId: string;
     persona: Persona;
     agentId: string;
+    voiceId: string;
   }> {
     if (!this.state.voiceId) {
       throw new Error("Voice not cloned yet");
@@ -222,89 +213,31 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     const futureAge = userAge + yearsAhead;
     console.log("[PresentSelfAgent] initSession: sessionId:", sessionId, "situation:", situation.slice(0, 50), "age:", userAge, "->", futureAge);
 
-    // Step 1: Generate persona with Workers AI
     const persona = await this.generatePersona(
       situation,
       userAge,
       futureAge,
       yearsAhead
     );
-    console.log("[PresentSelfAgent] initSession: persona generated, creating ElevenLabs agent...");
+    console.log("[PresentSelfAgent] initSession: persona generated");
 
-    // Step 2: Create ElevenLabs Conversational AI agent
-    const agentId = await this.createElevenLabsAgent(persona, situation);
-    console.log("[PresentSelfAgent] initSession: ElevenLabs agent created:", agentId);
+    const agentId = this.env.ELEVENLABS_AGENT_ID;
+    console.log("[PresentSelfAgent] initSession: using shared agent:", agentId);
 
-    // Store session in SQL
     this.sql`
       INSERT INTO sessions (session_id, topic, persona_json, agent_id, created_at)
       VALUES (${sessionId}, ${situation.slice(0, 200)}, ${JSON.stringify(persona)}, ${agentId}, ${Date.now()})
     `;
 
-    return { sessionId, persona, agentId };
+    return { sessionId, persona, agentId, voiceId: this.state.voiceId };
   }
 
   /**
-   * Create an ElevenLabs Conversational AI agent with the cloned voice + persona
+   * Get a signed URL for the shared ElevenLabs ConvAI agent
    */
-  private async createElevenLabsAgent(
-    persona: Persona,
-    situation: string
-  ): Promise<string> {
-    const response = await fetch("https://api.elevenlabs.io/v1/convai/agents/create", {
-      method: "POST",
-      headers: {
-        "xi-api-key": this.env.ELEVENLABS_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        conversation_config: {
-          agent: {
-            prompt: {
-              prompt: persona.systemPrompt,
-              llm: "gpt-4o-mini",
-              temperature: 0.85,
-              max_tokens: 120,
-            },
-            first_message: persona.openingLine,
-            language: "en",
-          },
-          tts: {
-            voice_id: this.state.voiceId,
-            model_id: "eleven_v3",
-            stability: 0.25,
-            similarity_boost: 0.85,
-            optimize_streaming_latency: 3,
-          },
-          asr: {
-            quality: "high",
-          },
-          turn: {
-            turn_timeout: 7,
-          },
-          conversation: {
-            max_duration_seconds: 600,
-          },
-        },
-        name: `DOPPEL_${situation.slice(0, 30)}_${Date.now()}`,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("[PresentSelfAgent] createElevenLabsAgent failed:", error);
-      throw new Error(`Failed to create ElevenLabs agent: ${error}`);
-    }
-
-    const data = (await response.json()) as { agent_id: string };
-    return data.agent_id;
-  }
-
-  /**
-   * Get a signed URL for browser-direct connection to ElevenLabs ConvAI
-   */
-  private async getSignedUrl(agentId: string): Promise<{ signedUrl: string }> {
-    console.log("[PresentSelfAgent] getSignedUrl for agent:", agentId);
+  private async getSignedUrl(): Promise<{ signedUrl: string }> {
+    const agentId = this.env.ELEVENLABS_AGENT_ID;
+    console.log("[PresentSelfAgent] getSignedUrl for shared agent:", agentId);
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
@@ -326,9 +259,6 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     return { signedUrl: data.signed_url };
   }
 
-  /**
-   * Generate future-self persona using Workers AI
-   */
   private async generatePersona(
     situation: string,
     currentAge: number,
@@ -375,18 +305,20 @@ CRITICAL RULES FOR THE systemPrompt:
 
 Return ONLY valid JSON, no markdown.`;
 
-    const response = await (this.env.AI as any).run("@cf/meta/llama-3.1-70b-instruct", {
-      prompt,
-      max_tokens: 1000,
-    });
-
     try {
+      const response = await (this.env.AI as any).run("@cf/meta/llama-3.1-70b-instruct", {
+        prompt,
+        max_tokens: 1000,
+      });
+
       const text =
         typeof response === "string"
           ? response
           : (response as { response?: string }).response ?? "";
+      console.log("[PresentSelfAgent] AI response:", text.slice(0, 200));
       return JSON.parse(text) as Persona;
-    } catch {
+    } catch (e) {
+      console.warn("[PresentSelfAgent] AI persona generation failed, using fallback:", (e as Error).message);
       return {
         name: "Future You",
         age: futureAge,
