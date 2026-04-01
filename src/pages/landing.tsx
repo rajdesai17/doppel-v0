@@ -1,6 +1,42 @@
+import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Mic, Brain, MessageSquare } from "lucide-react";
+import { ArrowRight, Mic, Brain, MessageSquare, ShieldCheck, AudioLines, RotateCcw } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { Button } from "../components/ui/button";
+import { FeatureCard } from "../components/ui/grid-feature-cards";
+
+const features = [
+  {
+    title: "Voice Cloning",
+    icon: Mic,
+    description: "Record a short sample and our AI learns your unique tone, cadence, and speaking patterns.",
+  },
+  {
+    title: "Contextual AI",
+    icon: Brain,
+    description: "Describe your crossroads and life situation. The AI builds a future perspective around your goals.",
+  },
+  {
+    title: "Live Conversation",
+    icon: MessageSquare,
+    description: "Speak naturally with your future self in real-time. Ask questions, share doubts, gain clarity.",
+  },
+  {
+    title: "Private & Secure",
+    icon: ShieldCheck,
+    description: "Your voice and personal data are processed securely and never stored beyond your session.",
+  },
+  {
+    title: "Natural Audio",
+    icon: AudioLines,
+    description: "Responses are generated in your own cloned voice for an authentic, immersive experience.",
+  },
+  {
+    title: "Save & Replay",
+    icon: RotateCcw,
+    description: "Revisit past conversations anytime. Reflect on the advice your future self shared with you.",
+  },
+];
 
 export function LandingPage() {
   return (
@@ -82,136 +118,25 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Bento Grid - How It Works */}
+        {/* Features Grid */}
         <section className="mx-auto mt-32 w-full max-w-5xl pb-20">
-          <div className="mb-12 text-center">
-            <h2 className="mb-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <AnimatedContainer className="mx-auto mb-12 max-w-3xl text-center">
+            <h2 className="text-3xl font-bold tracking-wide text-balance md:text-4xl">
               How It Works
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Three simple steps to start your conversation
+            <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance">
+              Clone your voice, share your story, and talk to who you could become.
             </p>
-          </div>
+          </AnimatedContainer>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Step 1 - Voice Clone */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 transition-colors hover:border-border">
-              <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                <Mic className="size-5 text-primary" />
-              </div>
-              <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Step 1
-              </div>
-              <h3 className="mb-2 text-lg font-medium text-foreground">
-                Clone Your Voice
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Record a 30-second sample of your voice. Our AI learns your unique tone, 
-                cadence, and speaking style.
-              </p>
-              {/* Mini waveform visualization */}
-              <div className="mt-6 flex h-8 items-end justify-center gap-0.5">
-                {Array.from({ length: 32 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-1 rounded-full bg-primary/20 transition-all group-hover:bg-primary/40"
-                    style={{
-                      height: `${Math.random() * 24 + 8}px`,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Step 2 - Context */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 transition-colors hover:border-border">
-              <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                <Brain className="size-5 text-primary" />
-              </div>
-              <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Step 2
-              </div>
-              <h3 className="mb-2 text-lg font-medium text-foreground">
-                Share Your Crossroads
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Tell us about the decision you&apos;re facing. What paths are you considering? 
-                What matters most to you?
-              </p>
-              {/* Context bubbles */}
-              <div className="mt-6 flex flex-wrap gap-2">
-                {["Career", "Relationships", "Location", "Growth"].map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-border/50 bg-muted/50 px-3 py-1 text-xs text-muted-foreground transition-colors group-hover:border-border"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 3 - Conversation */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 transition-colors hover:border-border sm:col-span-2 lg:col-span-1">
-              <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                <MessageSquare className="size-5 text-primary" />
-              </div>
-              <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Step 3
-              </div>
-              <h3 className="mb-2 text-lg font-medium text-foreground">
-                Have the Conversation
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Speak naturally with your future self. Ask questions, share doubts, 
-                and gain perspective from who you could become.
-              </p>
-              {/* Chat preview */}
-              <div className="mt-6 space-y-2">
-                <div className="flex justify-end">
-                  <div className="rounded-2xl rounded-br-md bg-primary/20 px-3 py-2 text-xs text-foreground">
-                    Should I take the risk?
-                  </div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="rounded-2xl rounded-bl-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-                    Let me tell you what I learned...
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Features row */}
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-4">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <span className="text-sm">🔒</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Private & Secure</p>
-                <p className="text-xs text-muted-foreground">Your data stays yours</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-4">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <span className="text-sm">⚡</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Real-time AI</p>
-                <p className="text-xs text-muted-foreground">Natural conversations</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-4">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <span className="text-sm">💾</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Save & Replay</p>
-                <p className="text-xs text-muted-foreground">Revisit anytime</p>
-              </div>
-            </div>
-          </div>
+          <AnimatedContainer
+            delay={0.4}
+            className="grid grid-cols-1 divide-x divide-y divide-dashed border border-dashed sm:grid-cols-2 md:grid-cols-3"
+          >
+            {features.map((feature, i) => (
+              <FeatureCard key={i} feature={feature} />
+            ))}
+          </AnimatedContainer>
         </section>
       </main>
 
@@ -224,5 +149,33 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function AnimatedContainer({
+  className,
+  delay = 0.1,
+  children,
+}: {
+  delay?: number;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const shouldReduceMotion = useReducedMotion();
+
+  if (shouldReduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      initial={{ filter: "blur(4px)", translateY: -8, opacity: 0 }}
+      whileInView={{ filter: "blur(0px)", translateY: 0, opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.8 }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }
