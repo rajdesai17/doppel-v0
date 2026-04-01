@@ -58,43 +58,56 @@ export function ReplayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--background))]">
-        <Loader2 className="size-6 text-[rgb(var(--text-secondary))] animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <Loader2 className="size-6 text-[#666] animate-spin" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-[rgb(var(--background))]">
-        <h2 className="text-title text-[rgb(var(--foreground))] mb-3">Replay not found</h2>
-        <p className="text-body mb-8">This conversation may have expired.</p>
-        <Link to="/" className="btn btn-secondary">Start a new conversation</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-black">
+        <h2 className="font-display text-[36px] font-normal text-white mb-3">Replay not found</h2>
+        <p className="font-sans text-[17px] text-[#666] mb-8">This conversation may have expired.</p>
+        <Link 
+          to="/" 
+          className="font-sans text-[15px] font-medium text-white px-6 py-3 rounded-full bg-[#1C1C1C] border border-[#2a2a2a] hover:border-[#333] transition-colors duration-150"
+        >
+          Start a new conversation
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[rgb(var(--background))]">
+    <main className="min-h-screen flex flex-col bg-black">
       {/* Header */}
-      <header className="header">
-        <Link to="/setup" className="text-sm text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--foreground))] transition-colors">
+      <nav className="h-14 flex items-center justify-between px-12 border-b border-[#1C1C1C]">
+        <Link 
+          to="/setup" 
+          className="font-sans text-[13px] text-[#555] hover:text-white transition-colors duration-200"
+        >
           New conversation
         </Link>
-        <span className="header-logo">DOPPEL</span>
-        <button onClick={handleShare} className="btn-ghost flex items-center gap-2">
+        <span className="font-sans text-[13px] font-medium tracking-[0.2em] text-white uppercase">
+          DOPPEL
+        </span>
+        <button 
+          onClick={handleShare} 
+          className="font-sans text-[13px] text-[#555] hover:text-white flex items-center gap-2 transition-colors duration-150"
+        >
           <Share2 className="size-4" />
           <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
         </button>
-      </header>
+      </nav>
 
       {/* Content */}
-      <main className="flex-1 px-6 py-12">
-        <div className="page-container-sm">
+      <div className="flex-1 px-6 py-12">
+        <div className="max-w-[520px] mx-auto">
           {/* Title */}
           <div className="text-center mb-12">
-            <h1 className="text-title text-[rgb(var(--foreground))] mb-2">Your Conversation</h1>
-            <p className="text-body">
+            <h1 className="font-display text-[40px] font-normal text-white mb-2">Your Conversation</h1>
+            <p className="font-sans text-[17px] text-[#666]">
               {new Date(data.startedAt).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
@@ -105,23 +118,23 @@ export function ReplayPage() {
           </div>
 
           {/* Audio player */}
-          <div className="surface-glass p-6 mb-12">
+          <div className="p-6 mb-12 rounded-2xl bg-[#0a0a0a] border border-[#1C1C1C]">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="size-14 rounded-full bg-[rgb(var(--accent))] text-white flex items-center justify-center hover:bg-[rgb(var(--accent-hover))] transition-colors shrink-0"
+                className="size-14 rounded-full bg-[#7C3AED] text-white flex items-center justify-center hover:bg-[#6D28D9] transition-colors shrink-0"
               >
                 {isPlaying ? <Pause className="size-5" /> : <Play className="size-5 ml-0.5" />}
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="h-1 bg-[rgb(var(--surface-2))] rounded-full overflow-hidden mb-2">
+                <div className="h-[2px] bg-[#222] rounded-full overflow-hidden mb-2">
                   <div
-                    className="h-full bg-[rgb(var(--accent))]"
+                    className="h-full bg-[#7C3AED]"
                     style={{ width: `${(currentTime / data.duration) * 100}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-mono text-[rgb(var(--text-muted))] text-xs">
+                <div className="flex justify-between font-mono text-[11px] tracking-[0.1em] text-[#444]">
                   <span>{formatDuration(currentTime)}</span>
                   <span>{formatDuration(data.duration)}</span>
                 </div>
@@ -130,7 +143,7 @@ export function ReplayPage() {
               <a
                 href={`/api/audio/sessions/${sessionId}/full.mp3`}
                 download
-                className="size-10 rounded-lg bg-[rgb(var(--surface-2))] text-[rgb(var(--text-secondary))] flex items-center justify-center hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--foreground))] transition-colors shrink-0"
+                className="size-10 rounded-lg bg-[#1C1C1C] text-[#666] flex items-center justify-center hover:bg-[#222] hover:text-white transition-colors shrink-0"
               >
                 <Download className="size-4" />
               </a>
@@ -139,7 +152,7 @@ export function ReplayPage() {
 
           {/* Transcript */}
           <div className="space-y-5">
-            <h2 className="text-mono text-[rgb(var(--text-muted))] mb-6">TRANSCRIPT</h2>
+            <h2 className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#444] mb-6">TRANSCRIPT</h2>
             {data.transcript.map((entry, i) => (
               <div
                 key={i}
@@ -147,10 +160,10 @@ export function ReplayPage() {
               >
                 <div
                   className={cn(
-                    "size-8 rounded-full flex items-center justify-center text-mono text-xs font-medium shrink-0",
+                    "size-8 rounded-full flex items-center justify-center font-mono text-[10px] tracking-[0.1em] font-medium shrink-0",
                     entry.speaker === "future"
-                      ? "bg-[rgb(var(--accent)/0.2)] text-[rgb(var(--accent))]"
-                      : "bg-[rgb(var(--surface-1))] text-[rgb(var(--text-secondary))]"
+                      ? "bg-[#7C3AED]/20 text-[#7C3AED]"
+                      : "bg-[#111] text-[#666]"
                   )}
                 >
                   {entry.speaker === "user" ? "Now" : "35"}
@@ -159,12 +172,12 @@ export function ReplayPage() {
                   className={cn(
                     "flex-1 p-4 rounded-xl",
                     entry.speaker === "future"
-                      ? "bg-[rgb(var(--accent)/0.1)] text-[rgb(var(--foreground))]"
-                      : "bg-[rgb(var(--surface-1))] text-[rgb(var(--text-secondary))]"
+                      ? "bg-[#7C3AED]/10 text-white"
+                      : "bg-[#111] text-[#999]"
                   )}
                 >
-                  <p className="text-sm leading-relaxed">{entry.text}</p>
-                  <p className="text-mono text-[rgb(var(--text-muted))] text-xs mt-2">
+                  <p className="font-sans text-[15px] leading-relaxed">{entry.text}</p>
+                  <p className="font-mono text-[10px] tracking-[0.1em] text-[#444] mt-2">
                     {formatDuration(entry.timestamp - data.startedAt)}
                   </p>
                 </div>
@@ -174,12 +187,15 @@ export function ReplayPage() {
 
           {/* CTA */}
           <div className="mt-12 text-center">
-            <Link to="/setup" className="btn btn-secondary">
+            <Link 
+              to="/setup" 
+              className="inline-flex font-sans text-[15px] font-medium text-white px-6 py-3 rounded-full bg-[#1C1C1C] border border-[#2a2a2a] hover:border-[#333] transition-colors duration-150"
+            >
               Have another conversation
             </Link>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

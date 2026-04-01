@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 
 const LOADING_MESSAGES = [
   "Analyzing voice patterns",
@@ -52,43 +51,50 @@ export function LoadingPage() {
   }, [sessionId, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[rgb(var(--background))]">
+    <main className="min-h-screen flex flex-col bg-black">
       {/* Header */}
-      <header className="header">
-        <Link to="/setup" className="btn-ghost flex items-center gap-2">
-          <ArrowLeft className="size-4" />
+      <nav className="h-14 flex items-center justify-between px-12 border-b border-[#1C1C1C]">
+        <Link 
+          to="/setup" 
+          className="font-sans text-[13px] text-[#555] hover:text-white transition-colors duration-200"
+        >
+          ← back
         </Link>
-        <span className="header-logo">DOPPEL</span>
-        <div className="w-10" />
-      </header>
+        <span className="font-sans text-[13px] font-medium tracking-[0.2em] text-white uppercase">
+          DOPPEL
+        </span>
+        <div className="w-12" />
+      </nav>
 
       {/* Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="max-w-sm w-full text-center">
           {/* Processing orb */}
-          <div className="processing-orb mx-auto mb-10">
-            <div className="processing-orb-ring processing-orb-ring-1" />
-            <div className="processing-orb-ring processing-orb-ring-2" />
-            <div className="processing-orb-ring processing-orb-ring-3" />
-            <div className="processing-orb-core" />
+          <div className="relative size-[140px] mx-auto mb-10">
+            <div className="absolute inset-0 rounded-full bg-[#7C3AED] opacity-[0.12] animate-breathe" />
+            <div className="absolute inset-5 rounded-full bg-[#7C3AED] opacity-20 animate-breathe" style={{ animationDelay: "300ms" }} />
+            <div className="absolute inset-10 rounded-full bg-[#7C3AED] opacity-[0.35] animate-breathe" style={{ animationDelay: "600ms" }} />
+            <div className="absolute inset-[50px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_50px_rgba(124,58,237,0.5)]" />
           </div>
 
           {/* Status */}
-          <h2 className="text-title text-[rgb(var(--foreground))] mb-3">
+          <h2 className="font-display text-[36px] font-normal text-white mb-3">
             Creating your future self
           </h2>
-          <p className="text-body mb-10 h-6">{LOADING_MESSAGES[messageIndex]}...</p>
+          <p className="font-sans text-[17px] text-[#666] mb-10 h-6">
+            {LOADING_MESSAGES[messageIndex]}...
+          </p>
 
           {/* Progress bar */}
-          <div className="w-full h-1 bg-[rgb(var(--surface-1))] rounded-full overflow-hidden mb-3">
+          <div className="w-full h-[1px] bg-[#222] overflow-hidden mb-3">
             <div
-              className="h-full bg-[rgb(var(--accent))] transition-all duration-200"
+              className="h-full bg-[#7C3AED] transition-all duration-200"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-mono text-[rgb(var(--text-muted))]">{progress}%</p>
+          <p className="font-mono text-[11px] tracking-[0.1em] text-[#444]">{progress}%</p>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

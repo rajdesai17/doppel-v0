@@ -139,34 +139,34 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
   return (
     <div className="flex flex-col items-center">
-      {/* Microphone icon - centered, 48px below subtitle as per spec */}
-      <div className="h-12 flex items-center justify-center mb-8">
+      {/* Status indicator */}
+      <div className="h-10 flex items-center justify-center mb-6">
         {status === "recording" ? (
           <div className="flex items-center gap-2">
             <span className="relative flex size-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
               <span className="relative inline-flex rounded-full size-3 bg-red-500" />
             </span>
-            <span className="text-sm font-medium text-red-500">Recording</span>
+            <span className="font-sans text-sm font-medium text-red-500">Recording</span>
           </div>
         ) : status === "recorded" ? (
           <div className="flex items-center gap-2">
             <span className="size-3 rounded-full bg-emerald-500" />
-            <span className="text-sm font-medium text-emerald-500">Recorded</span>
+            <span className="font-sans text-sm font-medium text-emerald-500">Recorded</span>
           </div>
         ) : (
-          <Mic className="size-6 text-[#555] stroke-[1.5]" />
+          <Mic className="size-[22px] text-[#444]" />
         )}
       </div>
 
-      {/* Large timer display - 96px monospace as per spec */}
-      <div className="font-mono text-[96px] font-bold text-white leading-none tracking-tight mb-8">
+      {/* Large timer - DM Mono, 96px */}
+      <div className="text-timer text-[96px] font-bold text-white leading-none mb-4">
         {formatTimer(elapsed)}
       </div>
 
-      {/* Progress bar - full width, thin (1px bg, purple fill) */}
-      <div className="w-full max-w-[380px] mb-10">
-        <div className="w-full h-[2px] bg-[#333] rounded-full overflow-hidden">
+      {/* Progress bar - 384px wide, 1px height */}
+      <div className="w-full max-w-[384px] mb-12">
+        <div className="w-full h-[1px] bg-[#222] overflow-hidden">
           <div
             className="h-full bg-[#7C3AED] transition-all duration-100"
             style={{ width: `${progress}%` }}
@@ -176,11 +176,11 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
       {/* Audio playback (after recording) */}
       {status === "recorded" && audioUrl && (
-        <div className="w-full max-w-[380px] mb-6">
+        <div className="w-full max-w-[384px] mb-6">
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-[#111] border border-[#222] text-white hover:bg-[#1a1a1a] transition-colors"
+            className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-[#111] border border-[#1C1C1C] font-sans text-white hover:border-[#333] transition-colors duration-150"
           >
             {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
             {isPlaying ? "Pause" : "Play Recording"}
@@ -188,12 +188,12 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         </div>
       )}
 
-      {/* CTA Button - full width ~380px, 56px height, 14px radius as per spec */}
-      <div className="w-full max-w-[380px]">
+      {/* Action buttons - 384px wide, 56px height, 12px radius */}
+      <div className="w-full max-w-[384px]">
         {status === "idle" && (
           <button
             onClick={startRecording}
-            className="w-full h-14 flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-medium rounded-[14px] hover:bg-[#6D28D9] transition-colors"
+            className="w-full h-14 flex items-center justify-center gap-3 bg-[#7C3AED] text-white font-sans font-medium text-[15px] rounded-xl hover:bg-[#6D28D9] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(124,58,237,0.35)] transition-all duration-150"
           >
             <Mic className="size-5" />
             Start Recording
@@ -203,7 +203,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         {status === "recording" && (
           <button
             onClick={stopRecording}
-            className="w-full h-14 flex items-center justify-center gap-2 bg-red-600 text-white font-medium rounded-[14px] hover:bg-red-700 transition-colors"
+            className="w-full h-14 flex items-center justify-center gap-2 bg-red-600 text-white font-sans font-medium text-[15px] rounded-xl hover:bg-red-700 transition-colors duration-150"
           >
             <Square className="size-4" />
             Stop Recording
@@ -214,14 +214,14 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
           <div className="flex gap-3">
             <button
               onClick={resetRecording}
-              className="flex-1 h-14 flex items-center justify-center gap-2 bg-[#222] text-white font-medium rounded-[14px] hover:bg-[#333] transition-colors"
+              className="flex-1 h-14 flex items-center justify-center gap-2 bg-[#1C1C1C] text-white font-sans font-medium text-[15px] rounded-xl border border-[#2a2a2a] hover:bg-[#222] hover:border-[#333] transition-colors duration-150"
             >
               <RotateCcw className="size-4" />
               Re-record
             </button>
             <button
               onClick={confirmRecording}
-              className="flex-1 h-14 flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-medium rounded-[14px] hover:bg-[#6D28D9] transition-colors"
+              className="flex-1 h-14 flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-sans font-medium text-[15px] rounded-xl hover:bg-[#6D28D9] transition-colors duration-150"
             >
               <Check className="size-4" />
               Use this
@@ -231,7 +231,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
         {status === "error" && (
           <div className="text-center">
-            <p className="text-sm text-red-400 mb-6 max-w-sm">
+            <p className="font-sans text-sm text-red-400 mb-6 max-w-sm">
               {errorMsg || "Could not access microphone."}
             </p>
             <button
@@ -239,7 +239,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
                 setStatus("idle");
                 setErrorMsg(null);
               }}
-              className="text-zinc-400 hover:text-white text-sm transition-colors"
+              className="font-sans text-[#555] hover:text-white text-sm transition-colors duration-150"
             >
               Try again
             </button>

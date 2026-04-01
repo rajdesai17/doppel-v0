@@ -1,125 +1,111 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Mic, Clock, MessageSquare } from "lucide-react";
+import { Mic, Clock, MessageSquare } from "lucide-react";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      {/* Nav - Fixed top bar */}
-      <header className="h-16 flex items-center justify-between px-8 border-b border-[#1a1a1a]">
-        <span className="font-mono text-sm font-medium tracking-[0.2em] text-white uppercase">
+    <main className="min-h-screen flex flex-col bg-black">
+      {/* Nav - Fixed top */}
+      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-12 border-b border-[#1C1C1C] bg-black">
+        <span className="font-sans text-[13px] font-medium tracking-[0.2em] text-white uppercase">
           DOPPEL
         </span>
         <Link
           to="/setup"
-          className="text-sm text-zinc-400 hover:text-white transition-colors"
+          className="text-[13px] text-white px-5 py-2 border border-[#333] rounded-md hover:border-white transition-colors duration-200"
         >
-          Begin <span className="ml-1">→</span>
+          Begin →
         </Link>
-      </header>
+      </nav>
 
-      {/* Main content area */}
-      <main className="flex-1 flex flex-col">
-        {/* Hero Section - vertically centered, ~60vh */}
-        <section className="flex-1 flex flex-col items-center justify-center px-6 min-h-[60vh]">
-          {/* Eyebrow */}
-          <p className="text-[11px] font-mono tracking-[0.2em] text-[#666] uppercase mb-6">
-            A CONVERSATION ACROSS TIME
-          </p>
+      {/* Hero Section */}
+      <section className="relative flex flex-col items-center justify-center text-center pt-14 min-h-screen max-h-[776px] px-6">
+        {/* Eyebrow */}
+        <p className="font-sans text-[11px] tracking-[0.25em] uppercase text-[#555] mb-6">
+          A CONVERSATION ACROSS TIME
+        </p>
 
-          {/* H1 */}
-          <h1 className="text-[clamp(48px,8vw,80px)] font-normal text-white leading-[1.05] tracking-[-0.03em] text-center mb-6">
-            Meet Your Future Self
-          </h1>
+        {/* H1 - Instrument Serif */}
+        <h1 className="font-display text-[clamp(48px,8vw,88px)] font-normal text-white leading-[0.95] max-w-[800px] mb-8">
+          Meet Your Future Self
+        </h1>
 
-          {/* Subtext */}
-          <p className="text-lg text-[#999] text-center max-w-[560px] leading-relaxed mb-10">
-            Engage in a real-time conversation with an AI persona of your future self, powered by advanced voice synthesis. Describe your life&apos;s crossroads and gain grounded wisdom in your own voice from a decade forward.
-          </p>
+        {/* Subtext */}
+        <p className="font-sans text-[17px] leading-[1.65] text-[#666] max-w-[540px] mb-12">
+          Engage in a real-time conversation with an AI persona of your future self,
+          powered by advanced voice synthesis. Describe your crossroads — hear wisdom
+          from a decade forward.
+        </p>
 
-          {/* CTA - white pill button */}
-          <Link
-            to="/setup"
-            className="inline-flex items-center justify-center gap-2 h-[52px] px-7 bg-white text-black font-medium rounded-full hover:scale-[1.02] transition-transform"
+        {/* CTA Button - White pill */}
+        <Link
+          to="/setup"
+          className="inline-flex items-center justify-center font-sans text-[15px] font-medium bg-white text-black rounded-full px-10 py-4 hover:bg-[#e5e5e5] hover:scale-[1.02] transition-all duration-150 mb-20"
+        >
+          Start your conversation →
+        </Link>
+
+        {/* Waveform Strip - Cinematic audio pulse */}
+        <div className="absolute bottom-0 left-0 right-0 h-[72px] flex items-end justify-center overflow-hidden">
+          <div 
+            className="flex items-end justify-center gap-[4px]"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
+            }}
           >
-            Start your conversation
-            <ArrowRight className="size-4" />
-          </Link>
-        </section>
-
-        {/* Waveform - centered between hero and cards */}
-        <div className="flex items-end justify-center gap-[2px] h-[60px] mb-16">
-          {Array.from({ length: 80 }).map((_, i) => {
-            // Create a wave pattern that fades from center outward
-            const center = 40;
-            const distanceFromCenter = Math.abs(i - center);
-            const centerFactor = 1 - (distanceFromCenter / center) * 0.7;
-            const wave = Math.sin(i * 0.2) * 0.4 + 0.6;
-            const height = 8 + wave * centerFactor * 44;
-            const opacity = 0.15 + centerFactor * 0.35;
-            
-            return (
-              <div
-                key={i}
-                className="w-[3px] rounded-sm"
-                style={{
-                  height: `${height}px`,
-                  backgroundColor: '#333',
-                  opacity,
-                }}
-              />
-            );
-          })}
-        </div>
-
-        {/* Feature Cards Row - bottom ~30vh */}
-        <section className="border-t border-[#1a1a1a]">
-          <div className="grid grid-cols-1 md:grid-cols-3">
-            <FeatureCard
-              icon={<Mic className="size-5 stroke-[1.5]" />}
-              title="Clone Your Voice"
-              description="30 seconds of speech creates your unique voice profile for a seamless experience."
-            />
-            <div className="hidden md:block border-l border-[#1a1a1a]">
-              <FeatureCard
-                icon={<Clock className="size-5 stroke-[1.5]" />}
-                title="Future Persona"
-                description="AI generates a grounded persona from your context, informed by your situation."
-                noBorder
-              />
-            </div>
-            <div className="md:hidden border-t border-[#1a1a1a]">
-              <FeatureCard
-                icon={<Clock className="size-5 stroke-[1.5]" />}
-                title="Future Persona"
-                description="AI generates a grounded persona from your context, informed by your situation."
-              />
-            </div>
-            <div className="hidden md:block border-l border-[#1a1a1a]">
-              <FeatureCard
-                icon={<MessageSquare className="size-5 stroke-[1.5]" />}
-                title="Real Conversation"
-                description="Speak naturally. Your future self responds in real-time, in your own voice."
-                noBorder
-              />
-            </div>
-            <div className="md:hidden border-t border-[#1a1a1a]">
-              <FeatureCard
-                icon={<MessageSquare className="size-5 stroke-[1.5]" />}
-                title="Real Conversation"
-                description="Speak naturally. Your future self responds in real-time, in your own voice."
-              />
-            </div>
+            {Array.from({ length: 60 }).map((_, i) => {
+              // Bell curve amplitude from center outward
+              const center = 30;
+              const distance = Math.abs(i - center);
+              const bellCurve = Math.exp(-Math.pow(distance / 12, 2));
+              const height = 8 + bellCurve * 48;
+              const opacity = 0.04 + bellCurve * 0.21;
+              
+              return (
+                <div
+                  key={i}
+                  className="w-[2px] rounded-sm"
+                  style={{
+                    height: `${height}px`,
+                    backgroundColor: '#fff',
+                    opacity,
+                  }}
+                />
+              );
+            })}
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
-      {/* Footer note */}
-      <footer className="py-6 text-center">
-        <p className="text-xs text-[#444]">
+      {/* Features Section - 3 column grid */}
+      <section className="border-t border-[#1C1C1C]">
+        <div className="grid grid-cols-1 md:grid-cols-3">
+          <FeatureCard
+            icon={<Mic className="size-[18px]" />}
+            title="Clone Your Voice"
+            description="30 seconds of speech creates your unique voice profile for a seamless experience."
+          />
+          <FeatureCard
+            icon={<Clock className="size-[18px]" />}
+            title="Future Persona"
+            description="AI generates a grounded persona from your context, informed by your situation."
+            hasBorder
+          />
+          <FeatureCard
+            icon={<MessageSquare className="size-[18px]" />}
+            title="Real Conversation"
+            description="Speak naturally. Your future self responds in real-time, in your own voice."
+          />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="h-12 flex items-center justify-center border-t border-[#1C1C1C]">
+        <p className="font-mono text-[11px] tracking-[0.1em] text-[#333]">
           Built with Cloudflare Agents + ElevenLabs
         </p>
       </footer>
-    </div>
+    </main>
   );
 }
 
@@ -127,20 +113,26 @@ function FeatureCard({
   icon,
   title,
   description,
-  noBorder = false,
+  hasBorder = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
-  noBorder?: boolean;
+  hasBorder?: boolean;
 }) {
   return (
-    <div className={`px-10 py-8 ${!noBorder ? 'md:border-t-0' : ''}`}>
-      <div className="text-[#555] mb-4">
+    <div 
+      className={`px-12 py-10 ${hasBorder ? 'border-x border-[#1C1C1C] max-md:border-x-0 max-md:border-y' : ''}`}
+    >
+      <div className="text-[#444] mb-5">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-sm text-[#777] leading-relaxed">{description}</p>
+      <h3 className="font-sans text-[16px] font-semibold text-white mb-3">
+        {title}
+      </h3>
+      <p className="font-sans text-[13px] leading-[1.6] text-[#666] max-w-[280px]">
+        {description}
+      </p>
     </div>
   );
 }
