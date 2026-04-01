@@ -1,0 +1,26 @@
+import { cloudflare } from "@cloudflare/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+    cloudflare({
+      configPath: "./wrangler.jsonc",
+      persistState: true,
+      viteEnvironment: { name: "ssr" },
+    }),
+  ],
+  resolve: {
+    alias: {
+      "@": "/src",
+    },
+  },
+  build: {
+    rollupOptions: {
+      input: "./index.html",
+    },
+  },
+});

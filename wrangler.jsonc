@@ -1,0 +1,53 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doppel",
+  "main": "src/server.ts",
+  "compatibility_date": "2025-04-10",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Workers AI for persona generation
+  "ai": {
+    "binding": "AI"
+  },
+
+  // R2 for audio storage
+  "r2_buckets": [
+    {
+      "binding": "AUDIO_BUCKET",
+      "bucket_name": "doppel-audio"
+    }
+  ],
+
+  // Durable Objects for agents
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "PresentSelfAgent",
+        "name": "PRESENT_SELF"
+      },
+      {
+        "class_name": "FutureSelfAgent",
+        "name": "FUTURE_SELF"
+      }
+    ]
+  },
+
+  // SQL migrations for DO storage
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["PresentSelfAgent", "FutureSelfAgent"]
+    }
+  ],
+
+  // Environment variables (set via wrangler secret)
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+
+  // Observability
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
