@@ -58,12 +58,12 @@ export function LandingPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0.4 }}
       >
-        <Button asChild size="lg" className="rounded-full px-8">
-          <Link to="/setup">
+        <Link to="/setup">
+          <Button size="lg" className="rounded-full px-8">
             Start your conversation
-            <ArrowRight />
-          </Link>
-        </Button>
+            <ArrowRight className="size-4" />
+          </Button>
+        </Link>
       </motion.div>
     </main>
   );

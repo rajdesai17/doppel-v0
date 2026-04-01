@@ -34,7 +34,7 @@ function Button({
     <button
       data-slot="button"
       className={cn(
-        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-white/50',
+        'inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-white/50 [&_svg]:size-4 [&_svg]:shrink-0',
         variantStyles[variant],
         sizeStyles[size],
         className

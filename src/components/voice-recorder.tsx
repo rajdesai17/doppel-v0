@@ -288,8 +288,8 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
             size="lg"
             className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
           >
-            {isPlaying ? <Pause /> : <Play />}
-            {isPlaying ? "Pause" : "Play recording"}
+            {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+            <span>{isPlaying ? "Pause" : "Play recording"}</span>
           </Button>
         </motion.div>
       )}
@@ -310,8 +310,8 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
               size="lg"
               className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
             >
-              <Mic />
-              Start recording
+              <Mic className="size-4" />
+              <span>Start recording</span>
             </Button>
           </motion.div>
         )}
@@ -329,8 +329,8 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
               size="lg"
               className="rounded-full"
             >
-              <Square />
-              Stop recording
+              <Square className="size-4" />
+              <span>Stop recording</span>
             </Button>
           </motion.div>
         )}
@@ -350,16 +350,16 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
               size="lg"
               className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
             >
-              <RotateCcw />
-              Re-record
+              <RotateCcw className="size-4" />
+              <span>Re-record</span>
             </Button>
             <Button
               onClick={confirmRecording}
               size="lg"
               className="rounded-full"
             >
-              <Check />
-              Use this
+              <Check className="size-4" />
+              <span>Use this</span>
             </Button>
           </motion.div>
         )}
