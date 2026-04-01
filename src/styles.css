@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 /* ============================================
-   DOPPEL Design System
-   Vercel-grade precision minimalism
+   DOPPEL "Quantum Editorial" Design System
+   High-fidelity cinematic interface
    ============================================ */
 
 @theme inline {
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", Georgia, serif;
-  --font-mono: "DM Mono", "Geist Mono", ui-monospace, monospace;
+  --font-serif: "Playfair Display", "Instrument Serif", Georgia, serif;
+  --font-mono: "Geist Mono", "DM Mono", ui-monospace, monospace;
+  
+  /* Temporal Blue accent */
+  --color-temporal: oklch(0.7 0.1 250);
+  --color-temporal-glow: oklch(0.7 0.15 250);
 }
 
 /* ============================================
@@ -27,19 +31,31 @@ html {
 }
 
 body {
-  background-color: #000;
+  background-color: #020202;
   color: #ededed;
   font-family: var(--font-sans);
   line-height: 1.5;
   min-height: 100vh;
+  position: relative;
+}
+
+/* Subtle noise overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.3);
+  background: oklch(0.7 0.1 250 / 0.3);
 }
 
 :focus-visible {
-  outline: 2px solid rgba(124, 58, 237, 0.5);
+  outline: 2px solid oklch(0.7 0.1 250 / 0.5);
   outline-offset: 2px;
 }
 
@@ -54,12 +70,64 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #262626;
+  background: #1a1a1a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #404040;
+  background: #2a2a2a;
+}
+
+/* ============================================
+   Typography
+   ============================================ */
+
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.text-timer {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Glow text effect */
+.text-glow {
+  text-shadow: 
+    0 0 20px oklch(0.7 0.1 250 / 0.4),
+    0 0 40px oklch(0.7 0.1 250 / 0.2),
+    0 0 80px oklch(0.7 0.1 250 / 0.1);
+}
+
+/* Glitch effect for extraction text */
+@keyframes glitch {
+  0%, 90%, 100% { 
+    opacity: 1;
+    transform: translate(0);
+  }
+  92% { 
+    opacity: 0.8;
+    transform: translate(-2px, 1px);
+  }
+  94% { 
+    opacity: 0.9;
+    transform: translate(2px, -1px);
+  }
+  96% { 
+    opacity: 0.7;
+    transform: translate(-1px, 0);
+  }
+  98% { 
+    opacity: 1;
+    transform: translate(1px, 1px);
+  }
+}
+
+.animate-glitch {
+  animation: glitch 5s infinite;
 }
 
 /* ============================================
@@ -93,9 +161,15 @@ body {
   }
 }
 
-@keyframes wave-bar {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(1.4); }
+@keyframes breathe-bg {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+  }
 }
 
 @keyframes pulse-ring {
@@ -104,7 +178,7 @@ body {
     opacity: 0.5;
   }
   100% {
-    transform: scale(1.5);
+    transform: scale(1.8);
     opacity: 0;
   }
 }
@@ -112,6 +186,47 @@ body {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Neural pulse blob animation */
+@keyframes neural-pulse {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    transform: scale(1.05) rotate(5deg);
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 40% 60% 40% 50%;
+    transform: scale(1.1) rotate(0deg);
+  }
+  75% {
+    border-radius: 60% 40% 60% 30% / 70% 30% 50% 40%;
+    transform: scale(1.05) rotate(-5deg);
+  }
+}
+
+/* Light sweep for button hover */
+@keyframes light-sweep {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Typewriter cursor */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 .animate-fade-up {
@@ -126,8 +241,20 @@ body {
   animation: breathe 2.5s ease-in-out infinite;
 }
 
+.animate-breathe-bg {
+  animation: breathe-bg 4s ease-in-out infinite;
+}
+
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-neural-pulse {
+  animation: neural-pulse 8s ease-in-out infinite;
 }
 
 /* Staggered entrance for child elements */
@@ -143,16 +270,89 @@ body {
 .stagger > *:nth-child(6) { animation-delay: 500ms; }
 
 /* ============================================
-   Typography utilities
+   Glass button styles
    ============================================ */
 
-.font-display {
-  font-family: var(--font-serif);
-  font-weight: 400;
+.glass-button {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.text-timer {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+.glass-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.glass-button:hover {
+  border-color: oklch(0.7 0.1 250 / 0.3);
+  box-shadow: 
+    0 0 20px oklch(0.7 0.1 250 / 0.15),
+    inset 0 0 20px oklch(0.7 0.1 250 / 0.05);
+}
+
+.glass-button:hover::before {
+  opacity: 1;
+  animation: light-sweep 0.8s ease-out;
+}
+
+/* ============================================
+   Circular progress ring
+   ============================================ */
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: #1a1a1a;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: oklch(0.7 0.1 250);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.25s ease-out;
+  filter: drop-shadow(0 0 6px oklch(0.7 0.1 250 / 0.5));
+}
+
+/* ============================================
+   Neural pulse blob (liquid metal effect)
+   ============================================ */
+
+.neural-blob {
+  background: linear-gradient(
+    135deg,
+    oklch(0.7 0.1 250) 0%,
+    oklch(0.6 0.12 260) 50%,
+    oklch(0.5 0.1 250) 100%
+  );
+  filter: blur(0px);
+  animation: neural-pulse 8s ease-in-out infinite;
+}
+
+.neural-blob-active {
+  animation-duration: 3s;
+  box-shadow: 
+    0 0 40px oklch(0.7 0.1 250 / 0.4),
+    0 0 80px oklch(0.7 0.1 250 / 0.2);
+}
+
+/* SVG filter for liquid metal effect */
+.liquid-filter {
+  filter: url(#liquid-metal);
 }

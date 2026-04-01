@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PhoneOff, Mic, MicOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Conversation } from "@elevenlabs/client";
 import { cn } from "../lib/utils";
 
@@ -12,6 +13,8 @@ interface TranscriptEntry {
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
+const spring = { type: "spring", stiffness: 100, damping: 20 };
+
 export function ConversationPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -21,6 +24,8 @@ export function ConversationPage() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [displayedText, setDisplayedText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
   const conversationRef = useRef<Conversation | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -43,6 +48,29 @@ export function ConversationPage() {
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcript]);
+
+  // Typewriter effect for latest AI message
+  useEffect(() => {
+    const lastFutureMessage = [...transcript].reverse().find(t => t.speaker === "future");
+    if (lastFutureMessage && activeSpeaker === "future") {
+      setIsTyping(true);
+      let index = 0;
+      const text = lastFutureMessage.text;
+      setDisplayedText("");
+      
+      const typeInterval = setInterval(() => {
+        if (index < text.length) {
+          setDisplayedText(text.slice(0, index + 1));
+          index++;
+        } else {
+          clearInterval(typeInterval);
+          setIsTyping(false);
+        }
+      }, 30);
+
+      return () => clearInterval(typeInterval);
+    }
+  }, [transcript, activeSpeaker]);
 
   // Connect to ElevenLabs
   useEffect(() => {
@@ -174,12 +202,45 @@ export function ConversationPage() {
   };
 
   return (
-    <div className="min-h-screen h-screen flex flex-col bg-black">
+    <div className="min-h-screen h-screen flex flex-col bg-[#020202] relative overflow-hidden">
+      {/* SVG filter for liquid metal effect */}
+      <svg className="absolute" width="0" height="0">
+        <defs>
+          <filter id="liquid-metal">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"
+              result="liquid"
+            />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Breathing background */}
+      <motion.div
+        animate={{
+          scale: activeSpeaker === "future" ? [1, 1.02, 1] : 1,
+          opacity: activeSpeaker === "future" ? [0.03, 0.06, 0.03] : 0.03,
+        }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at 50% 40%, oklch(0.7 0.1 250) 0%, transparent 50%)",
+        }}
+      />
+
       {/* Header */}
-      <header className="shrink-0 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black">
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={spring}
+        className="shrink-0 h-14 flex items-center justify-between px-6 md:px-10 border-b border-white/[0.04] bg-[#020202]/80 backdrop-blur-xl relative z-10"
+      >
         <Link
           to="/"
-          className="font-sans text-[13px] text-[#525252] hover:text-white px-3.5 py-1.5 rounded-full border border-[#1a1a1a] hover:border-[#333] transition-all duration-150"
+          className="font-sans text-[13px] text-white/30 hover:text-white px-3.5 py-1.5 rounded-full border border-white/[0.06] hover:border-white/10 transition-all duration-300"
         >
           Exit
         </Link>
@@ -190,161 +251,194 @@ export function ConversationPage() {
             <div
               className={cn(
                 "size-[6px] rounded-full",
-                status === "connected" && "bg-emerald-500",
+                status === "connected" && "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]",
                 status === "connecting" && "bg-amber-400 animate-pulse",
                 (status === "disconnected" || status === "error") && "bg-red-500"
               )}
             />
-            <span className="font-sans text-[12px] text-[#525252] capitalize">{status}</span>
+            <span className="font-mono text-[11px] text-white/30 capitalize tracking-[0.05em]">{status}</span>
           </div>
           {status === "connected" && (
-            <span className="font-mono text-[12px] text-[#404040] tabular-nums">
+            <span className="font-mono text-[11px] text-white/20 tabular-nums">
               {formatTime(elapsed)}
             </span>
           )}
         </div>
 
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
+        <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-white/70 uppercase">
           Doppel
         </span>
-      </header>
+      </motion.header>
 
       {/* Main conversation view */}
-      <main className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Split screen avatars */}
-        <div className="flex-1 grid grid-cols-2 min-h-[260px] lg:min-h-0">
-          {/* Present self */}
-          <div className="flex flex-col items-center justify-center p-6 relative">
-            <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#404040] mb-8">
-              You — Now
-            </p>
-            <div className="relative">
-              {/* Speaking ring */}
-              {activeSpeaker === "user" && (
-                <div className="absolute -inset-4 rounded-full border border-white/10 animate-breathe" />
-              )}
-              <div
-                className={cn(
-                  "size-28 lg:size-36 rounded-full flex items-center justify-center transition-all duration-300",
-                  activeSpeaker === "user"
-                    ? "bg-white/[0.06]"
-                    : "bg-[#0a0a0a]"
-                )}
+      <main className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 py-12">
+        {/* Center circle - Neural Pulse */}
+        <div className="relative mb-8">
+          <AnimatePresence>
+            {activeSpeaker === "future" && (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={spring}
+                className="absolute -inset-8"
               >
-                <div
-                  className={cn(
-                    "size-16 lg:size-20 rounded-full flex items-center justify-center transition-all duration-300",
-                    activeSpeaker === "user"
-                      ? "bg-[#1a1a1a]"
-                      : "bg-[#111]"
-                  )}
-                >
-                  {isMuted ? (
-                    <MicOff className="size-6 lg:size-7 text-[#404040]" />
-                  ) : (
-                    <Mic
-                      className={cn(
-                        "size-6 lg:size-7 transition-colors duration-300",
-                        activeSpeaker === "user" ? "text-white" : "text-[#525252]"
-                      )}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+                <div className="size-full rounded-full border border-[oklch(0.7_0.1_250_/_0.2)] animate-pulse" />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Future self */}
-          <div className="flex flex-col items-center justify-center p-6 border-l border-[#1a1a1a] relative">
-            <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#404040] mb-8">
-              You — 2035
-            </p>
-            <div className="relative">
-              {/* Speaking ring */}
-              {activeSpeaker === "future" && (
-                <div className="absolute -inset-4 rounded-full border border-[#7C3AED]/30 shadow-[0_0_30px_rgba(124,58,237,0.15)]" style={{ animation: "breathe 2s ease-in-out infinite" }} />
+          <motion.div
+            animate={{
+              scale: activeSpeaker === "future" ? 1.1 : 1,
+            }}
+            transition={spring}
+            className="relative size-40 lg:size-48"
+          >
+            {/* Neural blob - liquid metal effect */}
+            <div
+              className={cn(
+                "absolute inset-0 neural-blob",
+                activeSpeaker === "future" && "neural-blob-active"
               )}
+            />
+            
+            {/* Inner glow */}
+            <div className="absolute inset-4 rounded-full bg-[#020202]/80 backdrop-blur-sm flex items-center justify-center">
               <div
                 className={cn(
-                  "size-28 lg:size-36 rounded-full flex items-center justify-center transition-all duration-300",
+                  "size-4 rounded-full transition-all duration-500",
                   activeSpeaker === "future"
-                    ? "bg-[#7C3AED]/10"
-                    : "bg-[#0a0a0a]"
+                    ? "bg-[oklch(0.7_0.1_250)] scale-125 shadow-[0_0_20px_oklch(0.7_0.1_250_/_0.6)]"
+                    : activeSpeaker === "user"
+                      ? "bg-white scale-110"
+                      : "bg-white/30"
                 )}
-              >
-                <div
-                  className={cn(
-                    "size-16 lg:size-20 rounded-full flex items-center justify-center border transition-all duration-300",
-                    activeSpeaker === "future"
-                      ? "bg-[#7C3AED]/15 border-[#7C3AED]/30"
-                      : "bg-[#111] border-[#1a1a1a]"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "size-3 rounded-full transition-all duration-300",
-                      activeSpeaker === "future"
-                        ? "bg-[#7C3AED] scale-125 shadow-[0_0_12px_rgba(124,58,237,0.6)]"
-                        : "bg-[#333]"
-                    )}
-                  />
-                </div>
-              </div>
+              />
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Transcript sidebar */}
-        <aside className="w-full lg:w-[380px] border-t lg:border-t-0 lg:border-l border-[#1a1a1a] flex flex-col bg-[#050505]">
-          <div className="shrink-0 px-5 py-3.5 border-b border-[#1a1a1a] flex items-center justify-between">
-            <h3 className="font-sans text-[13px] font-medium text-[#525252]">Transcript</h3>
-            <span className="font-mono text-[11px] text-[#333]">
-              {transcript.length} {transcript.length === 1 ? "message" : "messages"}
-            </span>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-48 lg:max-h-none">
-            {transcript.length === 0 && (
-              <p className="font-sans text-[13px] text-[#333] text-center py-10">
-                {status === "connecting"
-                  ? "Connecting..."
-                  : status === "error"
-                    ? "Connection failed. Please go back and try again."
-                    : "Waiting for conversation to begin..."}
+        {/* Speaker label */}
+        <motion.p
+          animate={{ opacity: activeSpeaker ? 1 : 0.5 }}
+          className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/40 mb-6"
+        >
+          {activeSpeaker === "future" ? "Your Future Self" : activeSpeaker === "user" ? "You — Now" : "Waiting..."}
+        </motion.p>
+
+        {/* Live transcription with typewriter effect */}
+        <AnimatePresence>
+          {activeSpeaker === "future" && displayedText && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={spring}
+              className="max-w-lg text-center"
+            >
+              <p className="font-sans text-[18px] lg:text-[20px] text-white/70 leading-relaxed">
+                {displayedText}
+                {isTyping && (
+                  <span className="inline-block w-[2px] h-5 bg-[oklch(0.7_0.1_250)] ml-1 animate-[blink_1s_infinite]" />
+                )}
               </p>
-            )}
-            {transcript.map((entry, i) => (
-              <div key={i} className="animate-fade-in">
-                <p className="font-mono text-[10px] tracking-[0.08em] text-[#333] mb-1.5 uppercase">
-                  {entry.speaker === "user" ? "You (Now)" : "You (2035)"}
-                </p>
-                <div
-                  className={cn(
-                    "px-3.5 py-2.5 rounded-xl font-sans text-[14px] leading-relaxed",
-                    entry.speaker === "future"
-                      ? "bg-[#7C3AED]/8 border-l-2 border-[#7C3AED]/40 text-[#e5e5e5]"
-                      : "bg-[#0a0a0a] border border-[#1a1a1a] text-[#a1a1a1]"
-                  )}
-                >
-                  {entry.text}
-                </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* User speaking indicator */}
+        <AnimatePresence>
+          {activeSpeaker === "user" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={spring}
+              className="flex items-center gap-2"
+            >
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      height: [8, 20, 8],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                    }}
+                    className="w-1 bg-white/50 rounded-full"
+                  />
+                ))}
               </div>
-            ))}
-            <div ref={transcriptEndRef} />
-          </div>
-        </aside>
+              <span className="font-mono text-[11px] text-white/30 ml-2">Listening...</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
+      {/* Transcript panel (collapsible on mobile) */}
+      <aside className="absolute right-0 top-14 bottom-20 w-[340px] border-l border-white/[0.04] bg-[#020202]/90 backdrop-blur-xl hidden lg:flex flex-col">
+        <div className="shrink-0 px-5 py-3.5 border-b border-white/[0.04] flex items-center justify-between">
+          <h3 className="font-mono text-[11px] tracking-[0.1em] uppercase text-white/30">Transcript</h3>
+          <span className="font-mono text-[10px] text-white/15">
+            {transcript.length} {transcript.length === 1 ? "message" : "messages"}
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {transcript.length === 0 && (
+            <p className="font-sans text-[13px] text-white/20 text-center py-10">
+              {status === "connecting"
+                ? "Connecting..."
+                : status === "error"
+                  ? "Connection failed."
+                  : "Waiting for conversation..."}
+            </p>
+          )}
+          {transcript.map((entry, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.1 }}
+            >
+              <p className="font-mono text-[9px] tracking-[0.1em] text-white/20 mb-1.5 uppercase">
+                {entry.speaker === "user" ? "You (Now)" : "You (2035)"}
+              </p>
+              <div
+                className={cn(
+                  "px-3.5 py-2.5 rounded-xl font-sans text-[13px] leading-relaxed",
+                  entry.speaker === "future"
+                    ? "bg-[oklch(0.7_0.1_250_/_0.08)] border-l-2 border-[oklch(0.7_0.1_250_/_0.4)] text-white/70"
+                    : "bg-white/[0.02] border border-white/[0.04] text-white/50"
+                )}
+              >
+                {entry.text}
+              </div>
+            </motion.div>
+          ))}
+          <div ref={transcriptEndRef} />
+        </div>
+      </aside>
+
       {/* Controls */}
-      <footer className="shrink-0 border-t border-[#1a1a1a] px-6 py-4 bg-black">
+      <motion.footer
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={spring}
+        className="shrink-0 border-t border-white/[0.04] px-6 py-4 bg-[#020202]/80 backdrop-blur-xl relative z-10"
+      >
         <div className="flex items-center justify-center gap-4">
           {/* Mute toggle */}
           <button
             onClick={toggleMute}
             className={cn(
-              "size-12 rounded-full flex items-center justify-center transition-all duration-150",
+              "size-12 rounded-full flex items-center justify-center transition-all duration-300",
               isMuted
                 ? "bg-red-500/10 text-red-400 hover:bg-red-500/15"
-                : "bg-[#111] text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]"
+                : "bg-white/[0.03] text-white/50 hover:text-white hover:bg-white/[0.06]"
             )}
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
@@ -354,13 +448,13 @@ export function ConversationPage() {
           {/* End call */}
           <button
             onClick={endConversation}
-            className="size-14 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 active:scale-95 transition-all duration-150"
+            className="size-14 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 active:scale-95 transition-all duration-150 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
             aria-label="End conversation"
           >
             <PhoneOff className="size-5" />
           </button>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }
