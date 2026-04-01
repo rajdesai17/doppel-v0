@@ -16,7 +16,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [frequencies, setFrequencies] = useState<number[]>(Array(32).fill(0));
+  const [frequencies, setFrequencies] = useState<number[]>(Array(24).fill(0));
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -41,10 +41,9 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
     const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
     analyzerRef.current.getByteFrequencyData(dataArray);
     
-    // Sample 32 frequency bands
     const bands = [];
-    const bandSize = Math.floor(dataArray.length / 32);
-    for (let i = 0; i < 32; i++) {
+    const bandSize = Math.floor(dataArray.length / 24);
+    for (let i = 0; i < 24; i++) {
       const start = i * bandSize;
       let sum = 0;
       for (let j = 0; j < bandSize; j++) {
@@ -76,7 +75,6 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         return;
       }
 
-      // Set up audio analyzer for waveform
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyzer = audioContext.createAnalyser();
@@ -109,7 +107,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        setFrequencies(Array(32).fill(0));
+        setFrequencies(Array(24).fill(0));
       };
 
       mediaRecorderRef.current = mediaRecorder;
@@ -117,7 +115,6 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
       setStatus("recording");
       setElapsed(0);
 
-      // Start frequency visualization
       updateFrequencies();
 
       const startTime = Date.now();
@@ -172,8 +169,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   };
 
   const progress = elapsed / duration;
-  const remaining = duration - elapsed;
-  const circumference = 2 * Math.PI * 90;
+  const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference * (1 - progress);
 
   const formatTimer = (seconds: number) => {
@@ -184,53 +180,47 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
   return (
     <div className="flex flex-col items-center">
-      {/* Circular Progress Ring with Timer */}
-      <div className="relative size-[220px] flex items-center justify-center mb-8">
+      {/* Extraction Ring - Massive centered circle */}
+      <div className="relative w-64 h-64 flex items-center justify-center mb-8">
         {/* SVG Progress Ring */}
-        <svg className="absolute inset-0 progress-ring" viewBox="0 0 220 220">
-          {/* Background ring */}
+        <svg className="absolute inset-0 progress-ring" viewBox="0 0 256 256">
+          {/* Base ring */}
           <circle
             className="progress-ring-bg"
-            cx="110"
-            cy="110"
-            r="90"
-            strokeWidth="2"
+            cx="128"
+            cy="128"
+            r="120"
+            strokeWidth="1"
           />
-          {/* Progress ring */}
+          {/* Progress ring with glow */}
           <circle
             className={cn(
-              "progress-ring-fill transition-all duration-300",
-              status === "recorded" && "stroke-emerald-500"
+              "progress-ring-fill",
+              status === "recorded" && "stroke-white"
             )}
-            cx="110"
-            cy="110"
-            r="90"
-            strokeWidth="3"
+            cx="128"
+            cy="128"
+            r="120"
+            strokeWidth="2"
             strokeDasharray={circumference}
             strokeDashoffset={status === "recorded" ? 0 : strokeDashoffset}
           />
         </svg>
 
-        {/* Center content */}
+        {/* Center content - Timer */}
         <div className="relative flex flex-col items-center justify-center">
           <AnimatePresence mode="wait">
             {status === "recording" ? (
-              <motion.div
+              <motion.span
                 key="recording"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={spring}
-                className="flex flex-col items-center"
+                className="font-mono text-5xl text-white tracking-widest"
               >
-                <div className="relative mb-3">
-                  <div className="size-3 rounded-full bg-red-500 animate-pulse" />
-                  <div className="absolute inset-0 size-3 rounded-full bg-red-500 animate-ping opacity-75" />
-                </div>
-                <span className="text-timer text-[48px] font-medium text-white leading-none">
-                  {formatTimer(elapsed)}
-                </span>
-              </motion.div>
+                {formatTimer(elapsed)}
+              </motion.span>
             ) : status === "recorded" ? (
               <motion.div
                 key="recorded"
@@ -240,38 +230,33 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
                 transition={spring}
                 className="flex flex-col items-center"
               >
-                <Check className="size-8 text-emerald-500 mb-2" />
-                <span className="text-timer text-[32px] font-medium text-white leading-none">
+                <Check className="size-8 text-white mb-2" />
+                <span className="font-mono text-3xl text-white tracking-widest">
                   {formatTimer(elapsed)}
                 </span>
               </motion.div>
             ) : (
-              <motion.div
+              <motion.span
                 key="idle"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={spring}
-                className="flex flex-col items-center"
+                className="font-mono text-5xl text-white tracking-widest"
               >
-                <Mic className="size-8 text-white/30 mb-2" />
-                <span className="text-timer text-[32px] font-medium text-white/50 leading-none">
-                  0:00
-                </span>
-              </motion.div>
+                0:00
+              </motion.span>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Real-time Waveform Visualizer (center-aligned, symmetrical) */}
-      <div className="w-full max-w-[360px] h-16 mb-6 flex items-center justify-center gap-[2px]">
+      {/* Waveform - Simple flex row of vertical bars */}
+      <div className="flex items-end justify-center gap-1 h-12 mb-8">
         {frequencies.map((freq, i) => {
-          const mirrorIndex = Math.abs(i - 15.5);
-          const centerWeight = 1 - mirrorIndex / 16;
           const height = status === "recording" 
-            ? Math.max(4, freq * 60 * (0.5 + centerWeight * 0.5))
-            : 4;
+            ? Math.max(8, freq * 48)
+            : 8 + Math.sin(i * 0.5) * 4;
           
           return (
             <motion.div
@@ -279,32 +264,13 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
               animate={{ height }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className={cn(
-                "w-[6px] rounded-full",
-                status === "recording"
-                  ? "bg-[oklch(0.7_0.1_250)]"
-                  : "bg-white/10"
+                "waveform-bar",
+                status === "recording" && freq > 0.3 && "active"
               )}
-              style={{
-                boxShadow: status === "recording" && freq > 0.3
-                  ? "0 0 8px oklch(0.7 0.1 250 / 0.5)"
-                  : "none",
-              }}
             />
           );
         })}
       </div>
-
-      {/* Glitching instruction text */}
-      <p className={cn(
-        "font-mono text-[13px] text-white/30 mb-8 h-5",
-        status === "recording" && "animate-glitch"
-      )}>
-        {status === "recording"
-          ? `Extracting voice... ${remaining}s remaining`
-          : status === "recorded"
-            ? "Voice extraction complete"
-            : `Speak naturally for ${duration} seconds...`}
-      </p>
 
       {/* Audio playback */}
       {status === "recorded" && audioUrl && (
@@ -312,103 +278,106 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={spring}
-          className="w-full max-w-[360px] mb-6"
+          className="mb-6"
         >
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] font-sans text-[14px] text-white/60 hover:text-white hover:border-white/10 transition-all duration-300"
+            className="flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-white/10 border border-white/20 text-white text-sm hover:bg-white hover:text-black transition-all duration-300"
           >
-            {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
             {isPlaying ? "Pause" : "Play recording"}
           </button>
         </motion.div>
       )}
 
-      {/* Action buttons */}
-      <div className="w-full max-w-[360px]">
-        <AnimatePresence mode="wait">
-          {status === "idle" && (
-            <motion.button
-              key="start"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={spring}
-              onClick={startRecording}
-              className="glass-button w-full h-12 flex items-center justify-center gap-2.5 text-white font-sans font-medium text-[14px] rounded-full"
-            >
-              <Mic className="size-[18px]" />
-              Start recording
-            </motion.button>
-          )}
+      {/* Action Button */}
+      <AnimatePresence mode="wait">
+        {status === "idle" && (
+          <motion.button
+            key="start"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={spring}
+            onClick={startRecording}
+            className="flex items-center gap-3 bg-white/10 hover:bg-white text-white hover:text-black border border-white/20 transition-all duration-300 rounded-full px-8 py-3 text-sm"
+          >
+            <Mic size={16} />
+            Start recording
+          </motion.button>
+        )}
 
-          {status === "recording" && (
-            <motion.button
-              key="stop"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={spring}
-              onClick={stopRecording}
-              className="w-full h-12 flex items-center justify-center gap-2 bg-red-600 text-white font-sans font-medium text-[14px] rounded-full hover:bg-red-700 transition-colors duration-150"
-            >
-              <Square className="size-4" />
-              Stop recording
-            </motion.button>
-          )}
+        {status === "recording" && (
+          <motion.button
+            key="stop"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={spring}
+            onClick={stopRecording}
+            className="flex items-center gap-3 bg-white text-black rounded-full px-8 py-3 text-sm font-medium hover:scale-105 transition-transform duration-300"
+          >
+            <Square size={16} />
+            Stop recording
+          </motion.button>
+        )}
 
-          {status === "recorded" && (
-            <motion.div
-              key="confirm"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={spring}
-              className="flex gap-3"
+        {status === "recorded" && (
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={spring}
+            className="flex gap-3"
+          >
+            <button
+              onClick={resetRecording}
+              className="flex items-center gap-2 bg-white/10 text-white border border-white/20 rounded-full px-6 py-3 text-sm hover:bg-white hover:text-black transition-all duration-300"
             >
-              <button
-                onClick={resetRecording}
-                className="flex-1 h-12 flex items-center justify-center gap-2 bg-white/[0.03] text-white/60 font-sans font-medium text-[14px] rounded-full border border-white/[0.06] hover:text-white hover:border-white/10 transition-all duration-300"
-              >
-                <RotateCcw className="size-4" />
-                Re-record
-              </button>
-              <button
-                onClick={confirmRecording}
-                className="flex-1 h-12 flex items-center justify-center gap-2 bg-[oklch(0.7_0.1_250)] text-white font-sans font-medium text-[14px] rounded-full hover:bg-[oklch(0.75_0.1_250)] active:scale-[0.98] transition-all duration-150"
-              >
-                <Check className="size-4" />
-                Use this
-              </button>
-            </motion.div>
-          )}
+              <RotateCcw size={16} />
+              Re-record
+            </button>
+            <button
+              onClick={confirmRecording}
+              className="flex items-center gap-2 bg-white text-black rounded-full px-6 py-3 text-sm font-medium hover:scale-105 transition-transform duration-300"
+            >
+              <Check size={16} />
+              Use this
+            </button>
+          </motion.div>
+        )}
 
-          {status === "error" && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={spring}
-              className="text-center"
+        {status === "error" && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={spring}
+            className="text-center"
+          >
+            <p className="text-sm text-white/60 mb-4 max-w-sm leading-relaxed">
+              {errorMsg || "Could not access microphone."}
+            </p>
+            <button
+              onClick={() => {
+                setStatus("idle");
+                setErrorMsg(null);
+              }}
+              className="text-sm text-white/40 hover:text-white transition-colors duration-300"
             >
-              <p className="font-sans text-[13px] text-red-400 mb-4 max-w-sm mx-auto leading-relaxed">
-                {errorMsg || "Could not access microphone."}
-              </p>
-              <button
-                onClick={() => {
-                  setStatus("idle");
-                  setErrorMsg(null);
-                }}
-                className="font-sans text-[13px] text-white/40 hover:text-white transition-colors duration-300"
-              >
-                Try again
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              Try again
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Footer tip */}
+      <p className="mt-8 font-mono text-[10px] tracking-widest text-white/30 uppercase">
+        Tip: Read something aloud or talk about your day
+      </p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Share2, Download, Play, Pause, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn, formatDuration } from "../lib/utils";
 
 interface ReplayData {
@@ -14,6 +15,8 @@ interface ReplayData {
   endedAt: number;
   duration: number;
 }
+
+const spring = { type: "spring", stiffness: 100, damping: 20 };
 
 export function ReplayPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -58,24 +61,25 @@ export function ReplayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="size-5 border-2 border-[#262626] border-t-[#666] rounded-full animate-spin" />
+      <div className="h-screen w-full flex items-center justify-center bg-black">
+        <div className="size-5 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-black">
-        <h2 className="font-display text-[36px] text-white mb-3">Replay not found</h2>
-        <p className="font-sans text-[15px] text-[#666] mb-8">
+      <div className="h-screen w-full flex flex-col items-center justify-center text-center px-4 bg-black">
+        <h2 className="font-serif text-4xl text-white mb-4">Replay not found</h2>
+        <p className="text-white/50 text-sm mb-8">
           This conversation may have expired.
         </p>
         <Link
           to="/"
-          className="font-sans text-[14px] font-medium text-black bg-white px-5 py-2.5 rounded-full hover:bg-[#e5e5e5] transition-colors duration-150"
+          className="inline-flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300"
         >
           Start a new conversation
+          <ArrowRight size={16} />
         </Link>
       </div>
     );
@@ -83,35 +87,42 @@ export function ReplayPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a]">
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={spring}
+        className="shrink-0 h-14 flex items-center justify-between px-6 border-b border-white/10"
+      >
         <Link
           to="/setup"
-          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
+          className="text-sm text-white/50 hover:text-white transition-colors duration-300"
         >
-          &larr; New conversation
+          New conversation
         </Link>
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
         <button
           onClick={handleShare}
-          className="font-sans text-[13px] text-[#525252] hover:text-white flex items-center gap-1.5 transition-colors duration-150"
+          className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors duration-300"
         >
-          <Share2 className="size-3.5" />
-          <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
+          <Share2 size={14} />
+          <span>{copied ? "Copied" : "Share"}</span>
         </button>
-      </nav>
+      </motion.header>
 
       {/* Content */}
-      <div className="flex-1 px-6 py-12 md:py-16">
-        <div className="max-w-[520px] mx-auto stagger">
+      <div className="flex-1 flex flex-col items-center px-6 py-12">
+        <div className="w-full max-w-lg">
           {/* Title */}
-          <div className="text-center mb-12">
-            <h1 className="font-display text-[40px] text-white mb-2 leading-tight">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.1 }}
+            className="text-center mb-12"
+          >
+            <h1 className="font-serif text-4xl text-white mb-3">
               Your Conversation
             </h1>
-            <p className="font-sans text-[15px] text-[#666]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">
               {new Date(data.startedAt).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
@@ -119,26 +130,31 @@ export function ReplayPage() {
               })}{" "}
               &middot; {formatDuration(data.duration)}
             </p>
-          </div>
+          </motion.div>
 
           {/* Audio player */}
-          <div className="p-5 mb-12 rounded-2xl bg-[#0a0a0a] border border-[#1a1a1a]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.2 }}
+            className="p-6 mb-12 rounded-2xl border border-white/10"
+          >
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="size-12 rounded-full bg-white text-black flex items-center justify-center hover:bg-[#e5e5e5] active:scale-95 transition-all duration-150 shrink-0"
+                className="size-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-300 shrink-0"
               >
-                {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 ml-0.5" />}
+                {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="h-[3px] bg-[#1a1a1a] rounded-full overflow-hidden mb-2">
+                <div className="h-px bg-white/10 rounded-full overflow-hidden mb-2">
                   <div
-                    className="h-full bg-white/80 rounded-full transition-all"
+                    className="h-full bg-white rounded-full transition-all"
                     style={{ width: `${data.duration ? (currentTime / data.duration) * 100 : 0}%` }}
                   />
                 </div>
-                <div className="flex justify-between font-mono text-[11px] tracking-[0.05em] text-[#404040]">
+                <div className="flex justify-between font-mono text-[10px] tracking-[0.1em] text-white/30">
                   <span>{formatDuration(currentTime)}</span>
                   <span>{formatDuration(data.duration)}</span>
                 </div>
@@ -147,16 +163,20 @@ export function ReplayPage() {
               <a
                 href={`/api/audio/sessions/${sessionId}/full.mp3`}
                 download
-                className="size-10 rounded-xl bg-[#111] border border-[#1a1a1a] text-[#525252] flex items-center justify-center hover:text-white hover:border-[#262626] transition-all duration-150 shrink-0"
+                className="size-10 rounded-full border border-white/10 text-white/50 flex items-center justify-center hover:text-white hover:border-white/20 transition-all duration-300 shrink-0"
               >
-                <Download className="size-4" />
+                <Download size={16} />
               </a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Transcript */}
-          <div>
-            <h2 className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#333] mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.3 }}
+          >
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30 mb-6">
               Transcript
             </h2>
 
@@ -164,46 +184,54 @@ export function ReplayPage() {
               {data.transcript.map((entry, i) => (
                 <div
                   key={i}
-                  className={cn("flex gap-3", entry.speaker === "future" ? "flex-row-reverse" : "")}
+                  className={cn(
+                    "flex gap-3",
+                    entry.speaker === "future" ? "flex-row-reverse" : ""
+                  )}
                 >
                   <div
                     className={cn(
-                      "size-7 rounded-full flex items-center justify-center font-mono text-[9px] tracking-wider font-medium shrink-0 mt-1",
+                      "size-7 rounded-full flex items-center justify-center font-mono text-[9px] tracking-wider shrink-0 mt-1",
                       entry.speaker === "future"
-                        ? "bg-[#7C3AED]/15 text-[#7C3AED]"
-                        : "bg-[#111] text-[#525252]"
+                        ? "bg-white text-black"
+                        : "bg-white/10 text-white/50"
                     )}
                   >
-                    {entry.speaker === "user" ? "N" : "F"}
+                    {entry.speaker === "user" ? "Y" : "F"}
                   </div>
                   <div
                     className={cn(
                       "flex-1 px-4 py-3 rounded-xl",
                       entry.speaker === "future"
-                        ? "bg-[#7C3AED]/8 text-[#e5e5e5]"
-                        : "bg-[#0a0a0a] border border-[#1a1a1a] text-[#a1a1a1]"
+                        ? "bg-white/5 text-white/80"
+                        : "border border-white/10 text-white/60"
                     )}
                   >
-                    <p className="font-sans text-[14px] leading-[1.7]">{entry.text}</p>
-                    <p className="font-mono text-[10px] tracking-[0.05em] text-[#333] mt-2">
+                    <p className="text-sm leading-relaxed">{entry.text}</p>
+                    <p className="font-mono text-[9px] tracking-[0.1em] text-white/20 mt-2">
                       {formatDuration(entry.timestamp - data.startedAt)}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* CTA */}
-          <div className="mt-16 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.4 }}
+            className="mt-16 text-center"
+          >
             <Link
               to="/setup"
-              className="inline-flex items-center gap-2 font-sans text-[14px] font-medium text-black bg-white px-6 py-3 rounded-full hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
+              className="inline-flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300"
             >
               Have another conversation
-              <ArrowRight className="size-4" />
+              <ArrowRight size={16} />
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
     </main>

@@ -1,17 +1,11 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceRecorder } from "../components/voice-recorder";
 import { getUserId, blobToBase64 } from "../lib/utils";
 
 type Step = "voice" | "situation" | "processing";
-
-const STEPS = [
-  { id: "voice", label: "Voice" },
-  { id: "situation", label: "Context" },
-  { id: "processing", label: "Create" },
-] as const;
 
 const spring = { type: "spring", stiffness: 100, damping: 20 };
 
@@ -104,231 +98,140 @@ export function SetupPage() {
     }
   };
 
-  const currentStepIndex = step === "voice" ? 0 : step === "situation" ? 1 : 2;
-
   return (
-    <main className="min-h-screen flex flex-col bg-[#020202] relative">
-      {/* Subtle radial glow */}
-      <div
-        className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at center, oklch(0.7 0.1 250 / 0.05) 0%, transparent 60%)",
-        }}
-      />
+    <main className="h-screen w-full flex flex-col items-center justify-center text-center px-4 bg-black">
+      <AnimatePresence mode="wait">
+        {/* Step 1: Voice Recording */}
+        {step === "voice" && (
+          <motion.div
+            key="voice"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={spring}
+            className="flex flex-col items-center"
+          >
+            {/* Header */}
+            <h2 className="font-serif text-4xl text-white mb-2">
+              Record your voice
+            </h2>
+            <p className="text-white/50 text-sm mb-16">
+              Speak naturally for 30 seconds to create your clone.
+            </p>
 
-      {/* Nav */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={spring}
-        className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-10 border-b border-white/[0.04] bg-[#020202]/80 backdrop-blur-xl"
-      >
-        <Link
-          to="/"
-          className="font-sans text-[13px] text-white/40 hover:text-white transition-colors duration-300"
-        >
-          &larr; Back
-        </Link>
-        <span className="font-mono text-[12px] font-medium tracking-[0.2em] text-white/70 uppercase">
-          Doppel
-        </span>
-        <div className="w-12" />
-      </motion.nav>
+            {/* Voice Recorder */}
+            <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
+          </motion.div>
+        )}
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center pt-[112px] px-6 pb-16 relative z-10">
-        {/* Stepper */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...spring, delay: 0.1 }}
-          className="flex items-center gap-0 mb-16"
-        >
-          {STEPS.map((s, index) => (
-            <div key={s.id} className="flex items-center">
-              {/* Step node */}
-              <div className="flex flex-col items-center gap-2">
-                <motion.div
-                  animate={{
-                    scale: currentStepIndex === index ? 1.1 : 1,
-                    backgroundColor:
-                      currentStepIndex === index
-                        ? "oklch(0.7 0.1 250)"
-                        : currentStepIndex > index
-                          ? "rgba(255, 255, 255, 0.1)"
-                          : "rgba(255, 255, 255, 0.03)",
-                  }}
-                  transition={spring}
-                  className={`size-8 rounded-full flex items-center justify-center text-[12px] font-medium border ${
-                    currentStepIndex === index
-                      ? "border-transparent text-white shadow-[0_0_20px_oklch(0.7_0.1_250_/_0.4)]"
-                      : currentStepIndex > index
-                        ? "border-transparent text-white"
-                        : "border-white/[0.06] text-white/30"
-                  }`}
-                >
-                  {currentStepIndex > index ? <Check className="size-3.5" /> : index + 1}
-                </motion.div>
-                <span
-                  className={`font-mono text-[10px] tracking-[0.1em] uppercase transition-colors duration-300 ${
-                    currentStepIndex === index
-                      ? "text-white"
-                      : currentStepIndex > index
-                        ? "text-white/40"
-                        : "text-white/20"
-                  }`}
-                >
-                  {s.label}
-                </span>
+        {/* Step 2: Situation */}
+        {step === "situation" && (
+          <motion.div
+            key="situation"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={spring}
+            className="flex flex-col items-center w-full max-w-md"
+          >
+            {/* Header */}
+            <h2 className="font-serif text-4xl text-white mb-2">
+              {"What's on your mind?"}
+            </h2>
+            <p className="text-white/50 text-sm mb-12">
+              {"Describe a decision or crossroads you're facing."}
+            </p>
+
+            {error && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-white/60 mb-6 p-4 bg-white/5 rounded-lg border border-white/10"
+              >
+                {error}
+              </motion.p>
+            )}
+
+            {/* Form */}
+            <div className="w-full flex flex-col gap-6 mb-8">
+              <div className="text-left">
+                <label className="block font-mono text-[10px] uppercase tracking-[0.3em] text-white/50 mb-2">
+                  Your age
+                </label>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(parseInt(e.target.value) || 25)}
+                  min={18}
+                  max={80}
+                  className="w-full h-12 px-4 bg-transparent border border-white/20 rounded-lg font-sans text-white focus:outline-none focus:border-white transition-colors duration-300"
+                />
               </div>
 
-              {/* Connector */}
-              {index < STEPS.length - 1 && (
-                <div className="relative w-16 md:w-20 mx-3 mt-[-18px]">
-                  <div className="h-px bg-white/[0.06]" />
-                  <motion.div
-                    animate={{ width: currentStepIndex > index ? "100%" : "0%" }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="absolute top-0 left-0 h-px bg-[oklch(0.7_0.1_250)]"
-                    style={{ boxShadow: "0 0 8px oklch(0.7 0.1 250 / 0.5)" }}
-                  />
-                </div>
-              )}
+              <div className="text-left">
+                <label className="block font-mono text-[10px] uppercase tracking-[0.3em] text-white/50 mb-2">
+                  Your situation
+                </label>
+                <textarea
+                  value={situation}
+                  onChange={(e) => setSituation(e.target.value)}
+                  placeholder="I'm trying to decide whether to leave my job and start my own company..."
+                  rows={4}
+                  className="w-full px-4 py-3 bg-transparent border border-white/20 rounded-lg font-sans text-white placeholder:text-white/20 focus:outline-none focus:border-white resize-none transition-colors duration-300 leading-relaxed"
+                />
+              </div>
             </div>
-          ))}
-        </motion.div>
 
-        {/* Step content */}
-        <div className="w-full max-w-[420px]">
-          <AnimatePresence mode="wait">
-            {/* Step 1: Voice */}
-            {step === "voice" && (
-              <motion.div
-                key="voice"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={spring}
-              >
-                <div className="text-center mb-12">
-                  <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1] text-glow">
-                    Record your voice
-                  </h1>
-                  <p className="font-sans text-[15px] text-white/40 leading-relaxed">
-                    Speak naturally for 30 seconds to create your voice clone.
-                  </p>
-                </div>
+            {/* Submit */}
+            <button
+              onClick={handleSubmit}
+              disabled={!situation.trim() || isProcessing}
+              className="flex items-center gap-2 bg-white text-black font-medium text-sm px-8 py-3 rounded-full hover:scale-105 transition-transform duration-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  Meet your future self
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </motion.div>
+        )}
 
-                <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
+        {/* Step 3: Processing */}
+        {step === "processing" && (
+          <motion.div
+            key="processing"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={spring}
+            className="flex flex-col items-center"
+          >
+            {/* Breathing glow orb */}
+            <div className="relative w-32 h-32 mb-12">
+              <div className="absolute inset-0 rounded-full bg-white/20 animate-breathe" />
+              <div 
+                className="absolute inset-4 rounded-full bg-white/30 animate-breathe" 
+                style={{ animationDelay: "-0.5s" }} 
+              />
+              <div 
+                className="absolute inset-8 rounded-full bg-white/40 animate-breathe" 
+                style={{ animationDelay: "-1s" }} 
+              />
+            </div>
 
-                <p className="font-mono text-[11px] text-white/20 text-center mt-10 leading-relaxed">
-                  Tip: Read something aloud, recite a quote, or talk about your day.
-                </p>
-              </motion.div>
-            )}
-
-            {/* Step 2: Situation */}
-            {step === "situation" && (
-              <motion.div
-                key="situation"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={spring}
-              >
-                <div className="text-center mb-12">
-                  <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1] text-glow">
-                    {"What's on your mind?"}
-                  </h1>
-                  <p className="font-sans text-[15px] text-white/40 leading-relaxed">
-                    {"Describe a decision or crossroads you're facing."}
-                  </p>
-                </div>
-
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-3 p-4 mb-8 rounded-xl bg-red-500/5 border border-red-500/10"
-                  >
-                    <p className="font-sans text-[13px] text-red-400 leading-relaxed">{error}</p>
-                  </motion.div>
-                )}
-
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <label className="block font-mono text-[11px] text-white/40 mb-2 tracking-[0.05em] uppercase">
-                      Your age
-                    </label>
-                    <input
-                      type="number"
-                      value={age}
-                      onChange={(e) => setAge(parseInt(e.target.value) || 25)}
-                      min={18}
-                      max={80}
-                      className="w-full h-11 px-4 bg-white/[0.02] border border-white/[0.06] rounded-xl font-sans text-[15px] text-white focus:outline-none focus:border-[oklch(0.7_0.1_250_/_0.5)] focus:ring-1 focus:ring-[oklch(0.7_0.1_250_/_0.3)] transition-all duration-300"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-mono text-[11px] text-white/40 mb-2 tracking-[0.05em] uppercase">
-                      Your situation
-                    </label>
-                    <textarea
-                      value={situation}
-                      onChange={(e) => setSituation(e.target.value)}
-                      placeholder="I'm trying to decide whether to leave my job and start my own company..."
-                      rows={4}
-                      className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.06] rounded-xl font-sans text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[oklch(0.7_0.1_250_/_0.5)] focus:ring-1 focus:ring-[oklch(0.7_0.1_250_/_0.3)] resize-none transition-all duration-300 leading-relaxed"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!situation.trim() || isProcessing}
-                    className="glass-button w-full h-12 flex items-center justify-center gap-2 text-white font-sans font-medium text-[14px] rounded-full disabled:opacity-30 disabled:cursor-not-allowed mt-2"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        Meet your future self
-                        <ArrowRight className="size-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 3: Processing */}
-            {step === "processing" && (
-              <motion.div
-                key="processing"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={spring}
-                className="flex flex-col items-center py-12"
-              >
-                {/* Neural pulse blob */}
-                <div className="relative size-40 mb-12">
-                  <div className="absolute inset-0 neural-blob neural-blob-active" />
-                  <div className="absolute inset-4 neural-blob neural-blob-active" style={{ animationDelay: "-2s" }} />
-                  <div className="absolute inset-8 neural-blob neural-blob-active" style={{ animationDelay: "-4s" }} />
-                </div>
-
-                <p className="font-mono text-[13px] text-white/40 text-center animate-glitch">
-                  {processingMessage}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">
+              {processingMessage}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
