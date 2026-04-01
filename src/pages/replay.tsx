@@ -89,10 +89,10 @@ export function ReplayPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-6 py-10">
+      <main className="flex-1 px-6 py-12">
         <div className="page-container-sm">
           {/* Title */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-12">
             <h1 className="text-title text-[rgb(var(--foreground))] mb-2">Your Conversation</h1>
             <p className="text-body">
               {new Date(data.startedAt).toLocaleDateString("en-US", {
@@ -105,7 +105,7 @@ export function ReplayPage() {
           </div>
 
           {/* Audio player */}
-          <div className="surface-glass p-5 mb-10">
+          <div className="surface-glass p-6 mb-12">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
@@ -138,8 +138,8 @@ export function ReplayPage() {
           </div>
 
           {/* Transcript */}
-          <div className="space-y-4">
-            <h2 className="text-mono text-[rgb(var(--text-muted))]">TRANSCRIPT</h2>
+          <div className="space-y-5">
+            <h2 className="text-mono text-[rgb(var(--text-muted))] mb-6">TRANSCRIPT</h2>
             {data.transcript.map((entry, i) => (
               <div
                 key={i}

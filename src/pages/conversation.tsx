@@ -179,7 +179,7 @@ export function ConversationPage() {
         <div className="flex-1 grid grid-cols-2 min-h-[280px] lg:min-h-0">
           {/* Present self - left */}
           <div className="split-left flex flex-col items-center justify-center p-6 relative">
-            <p className="text-mono text-[rgb(var(--text-tertiary))] mb-6">
+            <p className="text-mono text-[rgb(var(--text-tertiary))] mb-8">
               You — Now
             </p>
             <div
@@ -216,7 +216,7 @@ export function ConversationPage() {
 
           {/* Future self - right */}
           <div className="split-right flex flex-col items-center justify-center p-6 border-l border-[rgb(var(--border)/0.5)] relative">
-            <p className="text-mono text-[rgb(var(--text-tertiary))] mb-6">
+            <p className="text-mono text-[rgb(var(--text-tertiary))] mb-8">
               You — 2035
             </p>
             <div

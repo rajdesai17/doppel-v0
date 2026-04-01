@@ -7,16 +7,19 @@ export function LandingPage() {
       {/* Header */}
       <header className="header">
         <span className="header-logo">DOPPEL</span>
-        <Link to="/setup" className="text-sm text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-primary))] transition-colors">
+        <Link 
+          to="/setup" 
+          className="text-sm font-medium text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--foreground))] transition-colors"
+        >
           Begin
         </Link>
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-16">
-        <div className="max-w-4xl mx-auto text-center animate-fade-up">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+        <div className="max-w-3xl mx-auto text-center animate-fade-up">
           {/* Eyebrow */}
-          <p className="text-mono text-[rgb(var(--text-tertiary))] mb-6 tracking-[0.2em]">
+          <p className="text-mono text-[rgb(var(--text-tertiary))] mb-8">
             A CONVERSATION ACROSS TIME
           </p>
 
@@ -26,7 +29,7 @@ export function LandingPage() {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-body text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-body-lg max-w-2xl mx-auto mb-12 leading-relaxed">
             Engage in a real-time conversation with an AI persona of your future self, powered by advanced voice synthesis. Describe your life&apos;s crossroads and gain grounded wisdom in your own voice from a decade forward.
           </p>
 
@@ -38,18 +41,21 @@ export function LandingPage() {
         </div>
 
         {/* Waveform */}
-        <div className="mt-20 flex items-end justify-center gap-[3px] h-10 opacity-0 animate-fade-in" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
+        <div 
+          className="mt-24 flex items-end justify-center gap-[3px] h-12 opacity-0 animate-fade-in" 
+          style={{ animationDelay: "500ms", animationFillMode: "forwards" }}
+        >
           {Array.from({ length: 60 }).map((_, i) => {
             const baseHeight = Math.sin(i * 0.15) * 0.5 + 0.5;
             const variation = Math.sin(i * 0.4) * 0.3;
-            const height = 8 + (baseHeight + variation) * 28;
+            const height = 8 + (baseHeight + variation) * 36;
             return (
               <div
                 key={i}
                 className="waveform-bar"
                 style={{
                   height: `${height}px`,
-                  opacity: 0.4 + baseHeight * 0.4,
+                  opacity: 0.35 + baseHeight * 0.35,
                 }}
               />
             );
@@ -57,7 +63,10 @@ export function LandingPage() {
         </div>
 
         {/* Features */}
-        <div className="w-full max-w-4xl mx-auto mt-20 grid grid-cols-1 md:grid-cols-3 gap-4 opacity-0 animate-fade-up" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+        <div 
+          className="w-full max-w-4xl mx-auto mt-24 grid grid-cols-1 md:grid-cols-3 gap-5 opacity-0 animate-fade-up" 
+          style={{ animationDelay: "700ms", animationFillMode: "forwards" }}
+        >
           <FeatureCard
             icon={<Mic className="size-5" />}
             title="Clone Your Voice"
@@ -77,7 +86,7 @@ export function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center">
+      <footer className="py-8 text-center">
         <p className="text-caption">
           Built with Cloudflare Agents + ElevenLabs
         </p>
@@ -96,11 +105,11 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="surface-interactive p-5">
-      <div className="text-[rgb(var(--text-tertiary))] mb-4">
+    <div className="surface-interactive p-6">
+      <div className="text-[rgb(var(--text-tertiary))] mb-5">
         {icon}
       </div>
-      <h3 className="text-heading text-[rgb(var(--foreground))] mb-2">{title}</h3>
+      <h3 className="text-heading text-[rgb(var(--foreground))] mb-3">{title}</h3>
       <p className="text-sm text-[rgb(var(--text-secondary))] leading-relaxed">{description}</p>
     </div>
   );

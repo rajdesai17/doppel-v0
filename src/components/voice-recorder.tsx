@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Check, RotateCcw, Play, Pause } from "lucide-react";
-import { formatDuration } from "../lib/utils";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
@@ -131,7 +130,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
   const progress = (elapsed / duration) * 100;
 
-  // Format time as M:SS with large monospace digits
+  // Format time as M:SS
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -141,16 +140,19 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   return (
     <div className="flex flex-col items-center">
       {/* Status indicator */}
-      <div className="h-8 flex items-center justify-center mb-8">
+      <div className="h-10 flex items-center justify-center mb-10">
         {status === "recording" && (
-          <div className="flex items-center gap-2">
-            <div className="size-2 rounded-full bg-[rgb(var(--error))] animate-pulse" />
+          <div className="flex items-center gap-3">
+            <span className="relative flex size-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[rgb(var(--error))] opacity-75" />
+              <span className="relative inline-flex rounded-full size-3 bg-[rgb(var(--error))]" />
+            </span>
             <span className="text-sm font-medium text-[rgb(var(--error))]">Recording</span>
           </div>
         )}
         {status === "recorded" && (
-          <div className="flex items-center gap-2">
-            <div className="size-2 rounded-full bg-[rgb(var(--success))]" />
+          <div className="flex items-center gap-3">
+            <span className="size-3 rounded-full bg-[rgb(var(--success))]" />
             <span className="text-sm font-medium text-[rgb(var(--success))]">Recorded</span>
           </div>
         )}
@@ -160,30 +162,27 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
       </div>
 
       {/* Large timer */}
-      <div className="text-center mb-8">
-        <div
-          className="font-mono text-7xl font-normal text-[rgb(var(--foreground))] tracking-tight"
-          style={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {formatTimer(elapsed)}
-        </div>
+      <div className="text-timer mb-10">
+        {formatTimer(elapsed)}
       </div>
 
       {/* Progress bar */}
-      <div className="w-full max-w-md h-1 bg-[rgb(var(--surface-2))] rounded-full mb-10 overflow-hidden">
-        <div
-          className="h-full bg-[rgb(var(--accent))] transition-all duration-100"
-          style={{ width: `${progress}%` }}
-        />
+      <div className="w-full max-w-sm mb-12">
+        <div className="progress-bar">
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
 
       {/* Audio playback */}
       {status === "recorded" && audioUrl && (
-        <div className="w-full max-w-md mb-6">
+        <div className="w-full max-w-sm mb-8">
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[rgb(var(--surface-1))] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-2))] transition-colors"
+            className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-[rgb(var(--surface-1))] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-2))] transition-colors"
           >
             {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
             {isPlaying ? "Pause" : "Play Recording"}
@@ -192,9 +191,9 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
       )}
 
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center gap-4">
         {status === "idle" && (
-          <button onClick={startRecording} className="btn btn-accent h-14 px-8 text-base">
+          <button onClick={startRecording} className="btn btn-accent">
             <Mic className="size-5" />
             Start Recording
           </button>
@@ -203,7 +202,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         {status === "recording" && (
           <button
             onClick={stopRecording}
-            className="btn h-14 px-8 text-base rounded-full bg-[rgb(var(--error))] text-white hover:bg-[rgb(var(--error)/0.9)]"
+            className="btn h-14 px-8 rounded-full bg-[rgb(var(--error))] text-white hover:bg-[rgb(var(--error)/0.9)] transition-colors"
           >
             <Square className="size-4" />
             Stop
@@ -212,11 +211,11 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
         {status === "recorded" && (
           <>
-            <button onClick={resetRecording} className="btn btn-secondary h-12 px-5">
+            <button onClick={resetRecording} className="btn btn-secondary">
               <RotateCcw className="size-4" />
               Re-record
             </button>
-            <button onClick={confirmRecording} className="btn btn-accent h-12 px-6">
+            <button onClick={confirmRecording} className="btn btn-accent">
               <Check className="size-4" />
               Use this recording
             </button>
@@ -225,7 +224,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
         {status === "error" && (
           <div className="text-center">
-            <p className="text-sm text-[rgb(var(--error))] mb-4 max-w-sm">
+            <p className="text-sm text-[rgb(var(--error))] mb-6 max-w-sm">
               {errorMsg || "Could not access microphone."}
             </p>
             <button

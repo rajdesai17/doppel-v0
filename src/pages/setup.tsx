@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { VoiceRecorder } from "../components/voice-recorder";
 import { getUserId, blobToBase64 } from "../lib/utils";
 
@@ -109,44 +109,57 @@ export function SetupPage() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex flex-col items-center px-6 py-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-16">
         <div className="w-full max-w-lg">
-          {/* Step indicator */}
-          <div className="flex items-center justify-center mb-14">
-            <StepItem
-              number={1}
-              label="Voice"
-              status={currentStepIndex === 0 ? "active" : "completed"}
-            />
+          {/* Step indicator - proper spacing */}
+          <nav className="step-indicator mb-16">
+            <div className="step-item">
+              <div className={`step-circle ${currentStepIndex === 0 ? "step-circle-active" : "step-circle-completed"}`}>
+                {currentStepIndex > 0 ? <Check className="size-4" /> : 1}
+              </div>
+              <span className={`step-label ${currentStepIndex === 0 ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--text-tertiary))]"}`}>
+                Voice
+              </span>
+            </div>
+            
             <div className={`step-line ${currentStepIndex >= 1 ? "step-line-active" : ""}`} />
-            <StepItem
-              number={2}
-              label="Situation"
-              status={currentStepIndex === 1 ? "active" : currentStepIndex > 1 ? "completed" : "upcoming"}
-            />
+            
+            <div className="step-item">
+              <div className={`step-circle ${currentStepIndex === 1 ? "step-circle-active" : currentStepIndex > 1 ? "step-circle-completed" : "step-circle-upcoming"}`}>
+                {currentStepIndex > 1 ? <Check className="size-4" /> : 2}
+              </div>
+              <span className={`step-label ${currentStepIndex === 1 ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--text-tertiary))]"}`}>
+                Situation
+              </span>
+            </div>
+            
             <div className={`step-line ${currentStepIndex >= 2 ? "step-line-active" : ""}`} />
-            <StepItem
-              number={3}
-              label="Create"
-              status={currentStepIndex === 2 ? "active" : "upcoming"}
-            />
-          </div>
+            
+            <div className="step-item">
+              <div className={`step-circle ${currentStepIndex === 2 ? "step-circle-active" : "step-circle-upcoming"}`}>
+                3
+              </div>
+              <span className={`step-label ${currentStepIndex === 2 ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--text-tertiary))]"}`}>
+                Create
+              </span>
+            </div>
+          </nav>
 
           {/* Step 1: Voice */}
           {step === "voice" && (
             <div className="animate-fade-up">
-              <div className="text-center mb-10">
-                <h1 className="text-title text-[rgb(var(--foreground))] mb-3">
+              <div className="section-header">
+                <h1 className="text-title text-[rgb(var(--foreground))]">
                   Record your voice
                 </h1>
-                <p className="text-body">
+                <p className="text-body mt-3">
                   Speak naturally for 30 seconds
                 </p>
               </div>
 
               <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
 
-              <p className="text-caption text-center mt-10">
+              <p className="text-caption text-center mt-16">
                 Tip: Read something aloud or talk about your day.
               </p>
             </div>
@@ -155,24 +168,24 @@ export function SetupPage() {
           {/* Step 2: Situation */}
           {step === "situation" && (
             <div className="animate-fade-up">
-              <div className="text-center mb-10">
-                <h1 className="text-title text-[rgb(var(--foreground))] mb-3">
+              <div className="section-header">
+                <h1 className="text-title text-[rgb(var(--foreground))]">
                   What&apos;s on your mind?
                 </h1>
-                <p className="text-body">
+                <p className="text-body mt-3">
                   Describe a decision, crossroads, or question you&apos;re facing.
                 </p>
               </div>
 
               {error && (
-                <div className="p-4 mb-6 rounded-lg bg-[rgb(var(--error)/0.1)] border border-[rgb(var(--error)/0.2)]">
+                <div className="p-4 mb-8 rounded-xl bg-[rgb(var(--error)/0.1)] border border-[rgb(var(--error)/0.2)]">
                   <p className="text-sm text-[rgb(var(--error))]">{error}</p>
                 </div>
               )}
 
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <div>
-                  <label className="block text-sm text-[rgb(var(--text-secondary))] mb-2 font-medium">
+                  <label className="block text-sm text-[rgb(var(--text-secondary))] mb-3 font-medium">
                     Your age
                   </label>
                   <input
@@ -186,7 +199,7 @@ export function SetupPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-[rgb(var(--text-secondary))] mb-2 font-medium">
+                  <label className="block text-sm text-[rgb(var(--text-secondary))] mb-3 font-medium">
                     Your situation
                   </label>
                   <textarea
@@ -201,10 +214,10 @@ export function SetupPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={!situation.trim() || isProcessing}
-                  className="w-full btn btn-primary h-14 text-base disabled:opacity-40"
+                  className="w-full btn btn-primary h-14 text-base mt-4 disabled:opacity-40"
                 >
                   Meet your future self
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 ml-1" />
                 </button>
               </div>
             </div>
@@ -212,55 +225,22 @@ export function SetupPage() {
 
           {/* Step 3: Processing */}
           {step === "processing" && (
-            <div className="animate-fade-up flex flex-col items-center pt-8">
+            <div className="animate-fade-up flex flex-col items-center">
               {/* Processing orb */}
-              <div className="processing-orb mb-10">
+              <div className="processing-orb mb-12">
                 <div className="processing-orb-ring processing-orb-ring-1" />
                 <div className="processing-orb-ring processing-orb-ring-2" />
                 <div className="processing-orb-ring processing-orb-ring-3" />
                 <div className="processing-orb-core" />
               </div>
 
-              <p className="text-body text-center">
+              <p className="text-body-lg text-center">
                 {processingMessage}
               </p>
             </div>
           )}
         </div>
       </main>
-    </div>
-  );
-}
-
-function StepItem({
-  number,
-  label,
-  status,
-}: {
-  number: number;
-  label: string;
-  status: "active" | "completed" | "upcoming";
-}) {
-  return (
-    <div className="flex flex-col items-center">
-      <div
-        className={`step-circle ${
-          status === "active"
-            ? "step-circle-active"
-            : status === "completed"
-              ? "step-circle-completed"
-              : "step-circle-upcoming"
-        }`}
-      >
-        {status === "completed" ? <Check className="size-4" /> : number}
-      </div>
-      <span
-        className={`step-label ${
-          status === "active" ? "text-[rgb(var(--accent))]" : "text-[rgb(var(--text-tertiary))]"
-        }`}
-      >
-        {label}
-      </span>
     </div>
   );
 }

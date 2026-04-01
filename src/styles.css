@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 /* ============================================
-   DOPPEL Design System
-   Premium dark UI - Vercel/Linear/Raycast quality
+   DOPPEL Design System v2
+   Premium dark UI with proper spacing hierarchy
    ============================================ */
 
 :root {
   /* Typography */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Space Mono", "JetBrains Mono", ui-monospace, monospace;
+  --font-mono: "Space Mono", ui-monospace, monospace;
 
   /* Core palette - Pure dark mode */
-  --background: 9 9 11;           /* #09090b - near black */
-  --foreground: 250 250 250;      /* #fafafa - almost white */
+  --background: 9 9 11;           /* #09090b */
+  --foreground: 250 250 250;      /* #fafafa */
   
   /* Surface layers */
   --surface-1: 24 24 27;          /* #18181b - zinc-900 */
@@ -20,33 +20,45 @@
   --surface-3: 63 63 70;          /* #3f3f46 - zinc-700 */
   
   /* Borders */
-  --border: 39 39 42;             /* #27272a - zinc-800 */
+  --border: 39 39 42;             /* #27272a */
   --border-subtle: 255 255 255;   /* White at low opacity */
   
   /* Text hierarchy */
-  --text-primary: 250 250 250;    /* #fafafa - zinc-50 */
-  --text-secondary: 161 161 170;  /* #a1a1aa - zinc-400 */
-  --text-tertiary: 113 113 122;   /* #71717a - zinc-500 */
-  --text-muted: 82 82 91;         /* #52525b - zinc-600 */
+  --text-primary: 250 250 250;
+  --text-secondary: 161 161 170;
+  --text-tertiary: 113 113 122;
+  --text-muted: 82 82 91;
   
-  /* Accent - Bold violet */
-  --accent: 124 58 237;           /* #7c3aed - violet-600 */
-  --accent-hover: 109 40 217;     /* #6d28d9 - violet-700 */
-  --accent-muted: 139 92 246;     /* #8b5cf6 - violet-500 */
+  /* Accent - Violet */
+  --accent: 124 58 237;           /* #7c3aed */
+  --accent-hover: 109 40 217;
+  --accent-muted: 139 92 246;
   
   /* Status colors */
-  --success: 34 197 94;           /* #22c55e - green-500 */
-  --warning: 251 191 36;          /* #fbbf24 - amber-400 */
-  --error: 239 68 68;             /* #ef4444 - red-500 */
+  --success: 34 197 94;
+  --warning: 251 191 36;
+  --error: 239 68 68;
   
-  /* Ring */
-  --ring: 124 58 237;             /* violet-600 */
+  /* Spacing scale - 4px base */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
   
   /* Radius */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-2xl: 24px;
   --radius-full: 9999px;
 }
 
@@ -102,7 +114,7 @@ body {
 }
 
 /* ============================================
-   Typography
+   Typography - Clear hierarchy
    ============================================ */
 
 .text-display {
@@ -133,8 +145,22 @@ body {
   color: rgb(var(--text-secondary));
 }
 
+.text-body-lg {
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgb(var(--text-secondary));
+}
+
 .text-caption {
   font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgb(var(--text-tertiary));
+}
+
+.text-small {
+  font-size: 0.8125rem;
   font-weight: 400;
   line-height: 1.5;
   color: rgb(var(--text-tertiary));
@@ -143,8 +169,19 @@ body {
 .text-mono {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+}
+
+/* Large monospace timer */
+.text-timer {
+  font-family: var(--font-mono);
+  font-size: clamp(4rem, 12vw, 6rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--foreground));
 }
 
 /* ============================================
@@ -154,13 +191,6 @@ body {
 .surface {
   background: rgb(var(--surface-1));
   border: 1px solid rgb(var(--border));
-  border-radius: var(--radius-lg);
-}
-
-.surface-glass {
-  background: rgb(var(--surface-1) / 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgb(var(--border-subtle) / 0.08);
   border-radius: var(--radius-lg);
 }
 
@@ -177,14 +207,14 @@ body {
 }
 
 /* ============================================
-   Buttons
+   Buttons - Consistent sizes
    ============================================ */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   font-weight: 500;
   font-size: 0.9375rem;
   transition: all 150ms ease;
@@ -197,7 +227,8 @@ body {
 .btn-primary {
   background: rgb(var(--foreground));
   color: rgb(var(--background));
-  padding: 0.75rem 1.5rem;
+  height: 48px;
+  padding: 0 var(--space-6);
   border-radius: var(--radius-full);
 }
 
@@ -214,8 +245,10 @@ body {
 .btn-accent {
   background: rgb(var(--accent));
   color: white;
-  padding: 0.875rem 1.75rem;
+  height: 52px;
+  padding: 0 var(--space-8);
   border-radius: var(--radius-full);
+  font-size: 1rem;
 }
 
 .btn-accent:hover {
@@ -231,7 +264,8 @@ body {
 .btn-secondary {
   background: rgb(var(--surface-2));
   color: rgb(var(--text-primary));
-  padding: 0.75rem 1.25rem;
+  height: 44px;
+  padding: 0 var(--space-5);
   border-radius: var(--radius-full);
 }
 
@@ -243,7 +277,7 @@ body {
 .btn-ghost {
   background: transparent;
   color: rgb(var(--text-secondary));
-  padding: 0.5rem 0.75rem;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
 }
 
@@ -259,8 +293,8 @@ body {
   width: 100%;
   background: rgb(var(--surface-1));
   border: 1px solid rgb(var(--border));
-  border-radius: var(--radius-md);
-  padding: 0.875rem 1rem;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
   font-size: 1rem;
   color: rgb(var(--text-primary));
   transition: all 150ms ease;
@@ -277,7 +311,7 @@ body {
 }
 
 /* ============================================
-   Header
+   Header - Consistent height
    ============================================ */
 
 .header {
@@ -288,8 +322,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem;
-  background: rgb(var(--background) / 0.8);
+  padding: 0 var(--space-6);
+  background: rgb(var(--background) / 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgb(var(--border) / 0.5);
 }
@@ -303,42 +337,25 @@ body {
 }
 
 /* ============================================
-   Status indicators
-   ============================================ */
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.status-dot-success {
-  background: rgb(var(--success));
-  box-shadow: 0 0 10px rgb(var(--success) / 0.5);
-}
-
-.status-dot-warning {
-  background: rgb(var(--warning));
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.status-dot-error {
-  background: rgb(var(--error));
-}
-
-/* ============================================
-   Step indicator
+   Step indicator - Proper spacing
    ============================================ */
 
 .step-indicator {
   display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0;
+  min-width: 80px;
 }
 
 .step-circle {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -346,7 +363,7 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 200ms ease;
-  position: relative;
+  flex-shrink: 0;
 }
 
 .step-circle-active {
@@ -355,8 +372,8 @@ body {
 }
 
 .step-circle-completed {
-  background: rgb(var(--surface-2));
-  color: rgb(var(--text-secondary));
+  background: rgb(var(--accent) / 0.15);
+  color: rgb(var(--accent));
 }
 
 .step-circle-upcoming {
@@ -366,9 +383,11 @@ body {
 }
 
 .step-line {
-  width: 80px;
+  width: 64px;
   height: 2px;
   background: rgb(var(--surface-2));
+  margin-top: 17px; /* Center with circle */
+  flex-shrink: 0;
 }
 
 .step-line-active {
@@ -378,7 +397,25 @@ body {
 .step-label {
   font-size: 0.8125rem;
   font-weight: 500;
-  margin-top: 0.5rem;
+  margin-top: var(--space-3);
+  text-align: center;
+}
+
+/* ============================================
+   Content sections - Spacing hierarchy
+   ============================================ */
+
+.section-header {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.section-header .text-title {
+  margin-bottom: var(--space-3);
+}
+
+.section-content {
+  margin-bottom: var(--space-10);
 }
 
 /* ============================================
@@ -393,7 +430,7 @@ body {
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -417,15 +454,6 @@ body {
   }
 }
 
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 20px rgb(var(--accent) / 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgb(var(--accent) / 0.5);
-  }
-}
-
 @keyframes waveform {
   0%, 100% { transform: scaleY(0.3); }
   50% { transform: scaleY(1); }
@@ -436,15 +464,83 @@ body {
 }
 
 .animate-fade-up {
-  animation: fade-up 500ms ease-out forwards;
+  animation: fade-up 600ms ease-out forwards;
 }
 
 .animate-breathe {
   animation: breathe 3s ease-in-out infinite;
 }
 
-.animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
+/* ============================================
+   Waveform visualization
+   ============================================ */
+
+.waveform-bar {
+  width: 3px;
+  background: rgb(var(--text-muted));
+  border-radius: 2px;
+  transform-origin: center;
+}
+
+/* ============================================
+   Processing orb
+   ============================================ */
+
+.processing-orb {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.processing-orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(var(--accent));
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+.processing-orb-ring-1 {
+  inset: 0;
+  opacity: 0.12;
+}
+
+.processing-orb-ring-2 {
+  inset: 20px;
+  opacity: 0.2;
+  animation-delay: 300ms;
+}
+
+.processing-orb-ring-3 {
+  inset: 40px;
+  opacity: 0.35;
+  animation-delay: 600ms;
+}
+
+.processing-orb-core {
+  position: absolute;
+  inset: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(var(--accent-muted)) 100%);
+  box-shadow: 0 0 50px rgb(var(--accent) / 0.5);
+}
+
+/* ============================================
+   Progress bar
+   ============================================ */
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgb(var(--surface-2));
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: rgb(var(--accent));
+  border-radius: var(--radius-full);
+  transition: width 100ms linear;
 }
 
 /* ============================================
@@ -458,7 +554,7 @@ body {
 .avatar-ring::before {
   content: "";
   position: absolute;
-  inset: -8px;
+  inset: -10px;
   border-radius: 50%;
   border: 2px solid rgb(var(--border-subtle) / 0.1);
   transition: all 300ms ease;
@@ -474,7 +570,7 @@ body {
   box-shadow: 0 0 30px rgb(var(--accent) / 0.3);
 }
 
-/* Split screen gradient overlays */
+/* Split screen */
 .split-left {
   background: linear-gradient(135deg, rgb(var(--background)) 0%, rgb(var(--surface-1) / 0.5) 100%);
 }
@@ -484,86 +580,11 @@ body {
 }
 
 /* ============================================
-   Waveform visualization
-   ============================================ */
-
-.waveform-bar {
-  width: 3px;
-  background: rgb(var(--text-muted));
-  border-radius: 2px;
-  transform-origin: center;
-}
-
-.waveform-bar-animated {
-  animation: waveform 1s ease-in-out infinite;
-}
-
-/* ============================================
-   Processing orb
-   ============================================ */
-
-.processing-orb {
-  position: relative;
-  width: 120px;
-  height: 120px;
-}
-
-.processing-orb-ring {
-  position: absolute;
-  border-radius: 50%;
-  background: rgb(var(--accent));
-  animation: breathe 2s ease-in-out infinite;
-}
-
-.processing-orb-ring-1 {
-  inset: 0;
-  opacity: 0.15;
-}
-
-.processing-orb-ring-2 {
-  inset: 15px;
-  opacity: 0.25;
-  animation-delay: 200ms;
-}
-
-.processing-orb-ring-3 {
-  inset: 30px;
-  opacity: 0.4;
-  animation-delay: 400ms;
-}
-
-.processing-orb-core {
-  position: absolute;
-  inset: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(var(--accent-muted)) 100%);
-  box-shadow: 0 0 40px rgb(var(--accent) / 0.5);
-}
-
-/* ============================================
-   Layout utilities
-   ============================================ */
-
-.page-container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-.page-container-sm {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-/* ============================================
    Transcript messages
    ============================================ */
 
 .message-bubble {
-  padding: 0.875rem 1rem;
+  padding: var(--space-4);
   border-radius: var(--radius-lg);
   font-size: 0.9375rem;
   line-height: 1.5;
@@ -576,7 +597,60 @@ body {
 }
 
 .message-bubble-future {
-  background: rgb(var(--accent) / 0.15);
+  background: rgb(var(--accent) / 0.12);
   border-left: 3px solid rgb(var(--accent));
   color: rgb(var(--text-primary));
+}
+
+/* ============================================
+   Layout containers
+   ============================================ */
+
+.page-center {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-6);
+}
+
+.content-narrow {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.content-wide {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.page-container-sm {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* Surface glass */
+.surface-glass {
+  background: rgb(var(--surface-1) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(var(--border-subtle) / 0.08);
+  border-radius: var(--radius-xl);
+}
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgb(var(--accent) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgb(var(--accent) / 0.5);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
 }
