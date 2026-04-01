@@ -262,15 +262,28 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
           agent: {
             prompt: {
               prompt: persona.systemPrompt,
-              max_tokens: 150,
+              llm: "gpt-4o-mini",
+              temperature: 0.85,
+              max_tokens: 120,
             },
             first_message: persona.openingLine,
             language: "en",
           },
           tts: {
             voice_id: this.state.voiceId,
-            stability: 0.3,
+            model_id: "eleven_v3",
+            stability: 0.25,
             similarity_boost: 0.85,
+            optimize_streaming_latency: 3,
+          },
+          asr: {
+            quality: "high",
+          },
+          turn: {
+            turn_timeout: 7,
+          },
+          conversation: {
+            max_duration_seconds: 600,
           },
         },
         name: `DOPPEL_${situation.slice(0, 30)}_${Date.now()}`,
