@@ -4,16 +4,11 @@ import { cn, formatDuration } from "../lib/utils";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
-  duration: number; // Target duration in seconds
+  duration: number;
 }
 
-export function VoiceRecorder({
-  onRecordingComplete,
-  duration,
-}: VoiceRecorderProps) {
-  const [status, setStatus] = useState<
-    "idle" | "recording" | "recorded" | "error"
-  >("idle");
+export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderProps) {
+  const [status, setStatus] = useState<"idle" | "recording" | "recorded" | "error">("idle");
   const [elapsed, setElapsed] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -35,7 +30,6 @@ export function VoiceRecorder({
 
   const startRecording = async () => {
     try {
-      // Request mic with explicit constraints
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -45,33 +39,23 @@ export function VoiceRecorder({
       });
       streamRef.current = stream;
 
-      // Check audio track health
       const track = stream.getAudioTracks()[0];
-      console.log("[recorder] Audio track:", track.label, "enabled:", track.enabled, "muted:", track.muted);
-      console.log("[recorder] Track settings:", JSON.stringify(track.getSettings()));
+      console.log("[recorder] Audio track:", track.label, "enabled:", track.enabled);
 
       if (track.muted) {
-        console.warn("[recorder] WARNING: Microphone track is MUTED at OS/hardware level!");
         stream.getTracks().forEach((t) => t.stop());
         setStatus("error");
-        setErrorMsg(
-          `Your microphone "${track.label}" is muted at the system level. ` +
-          "Please unmute it in Windows Sound Settings (right-click speaker icon in taskbar > Sound settings > Input) and try again."
-        );
+        setErrorMsg("Your microphone is muted at the system level. Please unmute it and try again.");
         return;
       }
 
-      // Pick MIME type
       const mimeType = [
         "audio/webm;codecs=opus",
         "audio/webm",
         "audio/ogg;codecs=opus",
         "audio/mp4",
       ].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
-      console.log("[recorder] Using MIME type:", mimeType || "default");
 
-      // Create recorder — NO AudioContext, NO timeslice
-      // This ensures the stream goes directly to MediaRecorder without interference
       const mediaRecorder = new MediaRecorder(stream, {
         ...(mimeType ? { mimeType } : {}),
       });
@@ -81,19 +65,11 @@ export function VoiceRecorder({
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunks.push(e.data);
-          console.log("[recorder] data chunk:", e.data.size, "bytes");
         }
       };
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
-        console.log("[recorder] Final blob:", blob.size, "bytes, type:", blob.type, "chunks:", chunks.length);
-
-        if (blob.size < 1000) {
-          console.warn("[recorder] WARNING: Blob is very small, microphone may not be working!");
-          console.warn("[recorder] Check Windows Settings > Privacy > Microphone");
-        }
-
         blobRef.current = blob;
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
@@ -102,12 +78,10 @@ export function VoiceRecorder({
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      // start() with NO timeslice — single blob on stop()
       mediaRecorder.start();
       setStatus("recording");
       setElapsed(0);
 
-      // Timer
       const startTime = Date.now();
       intervalRef.current = window.setInterval(() => {
         const newElapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -163,121 +137,105 @@ export function VoiceRecorder({
 
   return (
     <div className="flex flex-col items-center">
-      {/* Recording indicator */}
-      <div className="h-24 flex items-center justify-center mb-6">
+      {/* Status indicator */}
+      <div className="h-20 flex items-center justify-center mb-6">
         {status === "recording" ? (
-          <div className="flex items-center gap-3">
-            <div className="size-4 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-red-400 text-sm font-medium">Recording</span>
+          <div className="flex items-center gap-2.5">
+            <div className="size-2.5 rounded-full bg-error animate-pulse" />
+            <span className="text-sm font-medium text-error">Recording</span>
           </div>
         ) : status === "recorded" ? (
-          <div className="flex items-center gap-3">
-            <div className="size-4 rounded-full bg-green-500" />
-            <span className="text-green-400 text-sm font-medium">Recorded</span>
+          <div className="flex items-center gap-2.5">
+            <div className="size-2.5 rounded-full bg-success" />
+            <span className="text-sm font-medium text-success">Complete</span>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
-            <Mic className="size-8 text-zinc-500" />
-          </div>
+          <Mic className="size-8 text-text-muted" />
         )}
       </div>
 
       {/* Timer */}
       <div className="text-center mb-6">
-        <div className="font-mono text-3xl text-zinc-50 tabular-nums">
+        <div className="font-mono text-3xl text-foreground tabular-nums tracking-tight">
           {formatDuration(elapsed * 1000)}
         </div>
-        <div className="text-sm text-zinc-500">
+        <p className="text-caption mt-1">
           {status === "recording"
-            ? `Recording... ${duration - elapsed}s left`
+            ? `${duration - elapsed}s remaining`
             : status === "recorded"
               ? "Recording complete"
               : `Record for ${duration} seconds`}
-        </div>
+        </p>
       </div>
 
       {/* Progress bar */}
       {status === "recording" && (
-        <div className="w-full h-1.5 bg-zinc-800/60 rounded-full mb-6 overflow-hidden">
+        <div className="w-full h-1 bg-surface-1 rounded-full mb-6 overflow-hidden">
           <div
-            className="h-full bg-violet-500 transition-all duration-100"
+            className="h-full bg-foreground transition-all duration-100"
             style={{ width: `${progress}%` }}
           />
         </div>
       )}
 
-      {/* Audio playback — use hidden audio element + custom button */}
+      {/* Audio playback */}
       {status === "recorded" && audioUrl && (
         <div className="w-full mb-6">
           <audio
             ref={audioRef}
             src={audioUrl}
             onEnded={() => setIsPlaying(false)}
-            onError={(e) => console.error("[recorder] Audio playback error:", e)}
           />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-800/60 text-zinc-200 hover:bg-zinc-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-surface-1 text-foreground hover:bg-surface-2 transition-colors"
           >
-            {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
+            {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
             {isPlaying ? "Pause" : "Play Recording"}
           </button>
         </div>
       )}
 
       {/* Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {status === "idle" && (
-          <button
-            onClick={startRecording}
-            className="flex items-center gap-2 bg-violet-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-violet-400 transition-colors"
-          >
-            <Mic className="size-5" />
+          <button onClick={startRecording} className="btn btn-primary h-11 px-6">
+            <Mic className="size-4" />
             Start Recording
           </button>
         )}
 
         {status === "recording" && (
-          <button
-            onClick={stopRecording}
-            className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-colors"
-          >
-            <Square className="size-5" />
+          <button onClick={stopRecording} className="btn h-11 px-6 bg-error text-white hover:bg-error/90">
+            <Square className="size-4" />
             Stop
           </button>
         )}
 
         {status === "recorded" && (
           <>
-            <button
-              onClick={resetRecording}
-              className="flex items-center gap-2 bg-zinc-800/60 text-zinc-300 px-5 py-3 rounded-xl font-medium hover:bg-zinc-700 transition-colors"
-            >
+            <button onClick={resetRecording} className="btn btn-secondary h-11 px-5">
               <RotateCcw className="size-4" />
               Re-record
             </button>
-            <button
-              onClick={confirmRecording}
-              className="flex items-center gap-2 bg-violet-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-violet-400 transition-colors"
-            >
-              <Check className="size-5" />
-              Use this recording
+            <button onClick={confirmRecording} className="btn btn-primary h-11 px-6">
+              <Check className="size-4" />
+              Use Recording
             </button>
           </>
         )}
 
         {status === "error" && (
           <div className="text-center">
-            <p className="text-red-400 mb-4 max-w-md">
-              {errorMsg ||
-                "Could not access microphone. Please allow microphone access and check Windows Settings > Privacy > Microphone."}
+            <p className="text-sm text-error mb-4 max-w-sm">
+              {errorMsg || "Could not access microphone. Please check permissions."}
             </p>
             <button
               onClick={() => {
                 setStatus("idle");
                 setErrorMsg(null);
               }}
-              className="text-zinc-400 hover:text-zinc-50 text-sm"
+              className="text-text-secondary hover:text-foreground text-sm transition-colors"
             >
               Try again
             </button>

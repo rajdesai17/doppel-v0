@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
 import { VoiceRecorder } from "../components/voice-recorder";
 import { getUserId, blobToBase64 } from "../lib/utils";
 
@@ -65,7 +65,7 @@ export function SetupPage() {
 
       const { sessionId, persona, agentId, voiceId } = (await sessionResponse.json()) as { sessionId: string; persona: any; agentId: string; voiceId: string };
 
-      // Save session data for conversation page (includes persona for SDK overrides)
+      // Save session data for conversation page
       localStorage.setItem(`doppel_session_${sessionId}`, JSON.stringify({
         persona,
         agentId,
@@ -73,7 +73,6 @@ export function SetupPage() {
         userId,
       }));
 
-      // Navigate to conversation
       navigate(`/conversation/${sessionId}`);
     } catch (e) {
       setError((e as Error).message);
@@ -83,41 +82,39 @@ export function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
+      <header className="header">
         <Link
           to="/"
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
+          className="btn-ghost flex items-center gap-2"
         >
           <ArrowLeft className="size-4" />
-          Back
+          <span className="hidden sm:inline">Back</span>
         </Link>
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
-          DOPPEL
-        </div>
+        <span className="header-logo">DOPPEL</span>
         <div className="w-16" />
       </header>
 
       {/* Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-full max-w-xl">
-          {/* Progress */}
-          <div className="flex items-center justify-center gap-2 mb-12">
+        <div className="w-full max-w-md">
+          {/* Progress indicator */}
+          <div className="flex items-center justify-center gap-3 mb-12">
             <StepIndicator
               number={1}
               label="Voice"
               active={step === "voice"}
               completed={step !== "voice"}
             />
-            <div className="w-12 h-px bg-zinc-800" />
+            <div className="w-8 h-px bg-surface-2" />
             <StepIndicator
               number={2}
-              label="Situation"
+              label="Context"
               active={step === "situation"}
               completed={step === "processing"}
             />
-            <div className="w-12 h-px bg-zinc-800" />
+            <div className="w-8 h-px bg-surface-2" />
             <StepIndicator
               number={3}
               label="Create"
@@ -128,43 +125,48 @@ export function SetupPage() {
 
           {/* Step 1: Voice Recording */}
           {step === "voice" && (
-            <div className="animate-fade-in">
-              <h2 className="text-2xl font-semibold text-zinc-50 text-center mb-2">
-                Record your voice
-              </h2>
-              <p className="text-zinc-400 text-center mb-8">
-                Speak naturally for 30 seconds. This creates your voice clone.
-              </p>
+            <div className="animate-fade-up">
+              <div className="text-center mb-8">
+                <h2 className="text-title text-foreground mb-2">
+                  Record your voice
+                </h2>
+                <p className="text-body">
+                  Speak naturally for 30 seconds to create your voice clone.
+                </p>
+              </div>
+              
               <VoiceRecorder
                 onRecordingComplete={handleVoiceRecorded}
                 duration={30}
               />
-              <p className="text-xs text-zinc-500 text-center mt-6">
-                Tip: Read something aloud — a paragraph, your favorite quote, or
-                just talk about your day.
+              
+              <p className="text-caption text-center mt-8">
+                Tip: Read something aloud or talk about your day.
               </p>
             </div>
           )}
 
           {/* Step 2: Situation Input */}
           {step === "situation" && (
-            <div className="animate-fade-in">
-              <h2 className="text-2xl font-semibold text-zinc-50 text-center mb-2">
-                What&apos;s on your mind?
-              </h2>
-              <p className="text-zinc-400 text-center mb-8">
-                Describe a decision, crossroads, or question you&apos;re facing.
-              </p>
+            <div className="animate-fade-up">
+              <div className="text-center mb-8">
+                <h2 className="text-title text-foreground mb-2">
+                  {"What's on your mind?"}
+                </h2>
+                <p className="text-body">
+                  Describe a decision or question {"you're"} facing.
+                </p>
+              </div>
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
-                  {error}
+                <div className="surface p-4 mb-6 border-error/20 bg-error/5">
+                  <p className="text-sm text-error">{error}</p>
                 </div>
               )}
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
+                  <label className="block text-sm text-text-secondary mb-2 font-medium">
                     Your age
                   </label>
                   <input
@@ -173,37 +175,37 @@ export function SetupPage() {
                     onChange={(e) => setAge(parseInt(e.target.value) || 25)}
                     min={18}
                     max={80}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
+                    className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
+                  <label className="block text-sm text-text-secondary mb-2 font-medium">
                     Your situation
                   </label>
                   <textarea
                     value={situation}
                     onChange={(e) => setSituation(e.target.value)}
-                    placeholder="I'm trying to decide whether to leave my job and start my own company. It feels risky, but I can't stop thinking about it..."
+                    placeholder="I'm trying to decide whether to leave my job and start my own company..."
                     rows={5}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-50 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 resize-none"
+                    className="input resize-none"
                   />
                 </div>
 
                 <button
                   onClick={handleSubmit}
                   disabled={!situation.trim() || isProcessing}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-50 text-zinc-950 px-6 py-4 rounded-lg font-medium hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full btn btn-primary h-12 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none"
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 className="size-5 animate-spin" />
-                      Creating your future self...
+                      <Loader2 className="size-4 animate-spin" />
+                      Creating...
                     </>
                   ) : (
                     <>
                       Meet your future self
-                      <ArrowRight className="size-5" />
+                      <ArrowRight className="size-4" />
                     </>
                   )}
                 </button>
@@ -213,15 +215,21 @@ export function SetupPage() {
 
           {/* Step 3: Processing */}
           {step === "processing" && (
-            <div className="animate-fade-in text-center">
-              <div className="size-16 mx-auto mb-6 rounded-full bg-zinc-800 flex items-center justify-center">
-                <Loader2 className="size-8 text-violet-400 animate-spin" />
+            <div className="animate-fade-up text-center">
+              {/* Animated loader */}
+              <div className="relative size-20 mx-auto mb-8">
+                <div className="absolute inset-0 rounded-full bg-surface-1 animate-breathe" />
+                <div className="absolute inset-2 rounded-full bg-surface-2 animate-breathe" style={{ animationDelay: "150ms" }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="size-6 text-text-secondary animate-spin" />
+                </div>
               </div>
-              <h2 className="text-2xl font-semibold text-zinc-50 mb-2">
-                Forming your future self
+              
+              <h2 className="text-title text-foreground mb-2">
+                Creating your future self
               </h2>
-              <p className="text-zinc-400">
-                Cloning voice, generating persona, preparing conversation...
+              <p className="text-body">
+                Cloning voice, generating persona...
               </p>
             </div>
           )}
@@ -243,21 +251,21 @@ function StepIndicator({
   completed: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1.5">
       <div
-        className={`size-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-          active
-            ? "bg-violet-600 text-white"
-            : completed
-              ? "bg-zinc-700 text-zinc-300"
-              : "bg-zinc-800 text-zinc-500"
-        }`}
+        className={`
+          size-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200
+          ${active 
+            ? "bg-foreground text-background" 
+            : completed 
+              ? "bg-surface-2 text-text-secondary" 
+              : "bg-surface-1 text-text-muted"
+          }
+        `}
       >
-        {number}
+        {completed ? <Check className="size-4" /> : number}
       </div>
-      <span
-        className={`text-xs ${active ? "text-zinc-50" : "text-zinc-500"}`}
-      >
+      <span className={`text-xs font-medium ${active ? "text-foreground" : "text-text-tertiary"}`}>
         {label}
       </span>
     </div>

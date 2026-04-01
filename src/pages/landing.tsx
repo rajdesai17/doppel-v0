@@ -1,95 +1,115 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Mic, MessageCircle, Clock } from "lucide-react";
+import { ArrowRight, Mic, Brain, MessageSquare } from "lucide-react";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
-          DOPPEL
-        </div>
+      <header className="header">
+        <span className="header-logo">DOPPEL</span>
         <Link
           to="/setup"
-          className="text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
+          className="btn-ghost text-sm"
         >
-          Begin
+          Get Started
         </Link>
       </header>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-        <div className="max-w-3xl mx-auto text-center animate-fade-in">
-          {/* Eyebrow */}
-          <p className="font-mono text-xs tracking-[0.3em] text-zinc-500 uppercase mb-6">
-            A conversation across time
-          </p>
+      {/* Hero Section */}
+      <main className="flex-1 flex flex-col">
+        {/* Hero */}
+        <section className="flex-1 flex flex-col items-center justify-center px-6 py-20 relative">
+          {/* Subtle gradient background */}
+          <div className="absolute inset-0 gradient-radial pointer-events-none" />
+          
+          <div className="relative z-10 max-w-3xl mx-auto text-center animate-fade-up">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-1 border border-[rgb(var(--border)/0.1)] mb-8">
+              <span className="text-mono text-text-tertiary text-xs">
+                Voice AI Experience
+              </span>
+            </div>
 
-          {/* Main heading */}
-          <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-zinc-50 leading-[1.1] text-balance mb-8">
-            Meet Your
-            <br />
-            Future Self
-          </h1>
+            {/* Main heading */}
+            <h1 className="text-display text-foreground mb-6 text-balance">
+              Meet Your
+              <br />
+              <span className="text-text-secondary">Future Self</span>
+            </h1>
 
-          {/* Subheading */}
-          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-xl mx-auto mb-12 text-pretty">
-            Clone your voice. Describe your crossroads. Have a real conversation
-            with who you could become — 10 years from now.
-          </p>
+            {/* Subheading */}
+            <p className="text-body max-w-lg mx-auto mb-10 text-pretty">
+              Clone your voice. Describe your crossroads. Have a real conversation 
+              with who you could become — 10 years from now.
+            </p>
 
-          {/* CTA */}
-          <Link
-            to="/setup"
-            className="inline-flex items-center gap-3 bg-zinc-50 text-zinc-950 px-8 py-4 rounded-full font-medium text-lg hover:bg-zinc-200 transition-colors group"
-          >
-            Start your conversation
-            <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-
-          {/* Visual element - abstract waveform */}
-          <div className="mt-20 flex items-center justify-center gap-1">
-            {Array.from({ length: 40 }).map((_, i) => (
-              <div
-                key={i}
-                className="w-1 bg-zinc-700 rounded-full animate-pulse-glow"
-                style={{
-                  height: `${20 + Math.sin(i * 0.3) * 15 + Math.random() * 10}px`,
-                  animationDelay: `${i * 50}ms`,
-                  opacity: 0.3 + Math.sin(i * 0.2) * 0.3,
-                }}
-              />
-            ))}
+            {/* CTA */}
+            <div className="flex items-center justify-center gap-4">
+              <Link
+                to="/setup"
+                className="btn btn-primary group"
+              >
+                Start Conversation
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <span className="text-caption">Free to use</span>
+            </div>
           </div>
-        </div>
+
+          {/* Waveform visualization */}
+          <div className="mt-20 flex items-center justify-center gap-[3px] opacity-0 animate-fade-in" style={{ animationDelay: "600ms" }}>
+            {Array.from({ length: 32 }).map((_, i) => {
+              const height = 12 + Math.sin(i * 0.4) * 8 + Math.random() * 6;
+              return (
+                <div
+                  key={i}
+                  className="w-[3px] rounded-full bg-text-muted"
+                  style={{
+                    height: `${height}px`,
+                    animationDelay: `${i * 60}ms`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="border-t border-[rgb(var(--border)/var(--border-opacity))] py-20">
+          <div className="page-container">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FeatureCard
+                icon={<Mic className="size-5" />}
+                title="Clone Your Voice"
+                description="30 seconds of speech creates your unique voice profile using advanced AI voice synthesis."
+                delay={0}
+              />
+              <FeatureCard
+                icon={<Brain className="size-5" />}
+                title="Future Persona"
+                description="AI generates your future self — informed by your situation, grounded in earned wisdom."
+                delay={100}
+              />
+              <FeatureCard
+                icon={<MessageSquare className="size-5" />}
+                title="Real Conversation"
+                description="Speak naturally. Your future self responds in real-time, in your own voice."
+                delay={200}
+              />
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Features */}
-      <section className="border-t border-zinc-800/50 px-6 py-16">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <FeatureCard
-            icon={<Mic className="size-5" />}
-            title="Clone Your Voice"
-            description="30 seconds of speech creates your unique voice profile using ElevenLabs Instant Voice Clone."
-          />
-          <FeatureCard
-            icon={<Clock className="size-5" />}
-            title="Future Persona"
-            description="AI generates your future self — informed by your situation, grounded in earned wisdom."
-          />
-          <FeatureCard
-            icon={<MessageCircle className="size-5" />}
-            title="Real Conversation"
-            description="Speak naturally. Your future self responds in real-time, in your own voice."
-          />
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="border-t border-zinc-800/50 px-6 py-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-zinc-500">
-          <span>Built with Cloudflare Agents + ElevenLabs</span>
-          <span>Hackathon 2025</span>
+      <footer className="border-t border-[rgb(var(--border)/var(--border-opacity))] py-5">
+        <div className="page-container flex items-center justify-between">
+          <span className="text-caption">
+            Built with ElevenLabs + Cloudflare
+          </span>
+          <span className="text-caption">
+            2025
+          </span>
         </div>
       </footer>
     </div>
@@ -100,18 +120,23 @@ function FeatureCard({
   icon,
   title,
   description,
+  delay,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  delay: number;
 }) {
   return (
-    <div className="p-6 rounded-xl border border-zinc-800/50 bg-zinc-900/30 hover:bg-zinc-900/50 transition-colors">
-      <div className="size-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+    <div 
+      className="surface-interactive p-6 opacity-0 animate-fade-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="size-10 rounded-lg bg-surface-2 flex items-center justify-center text-text-secondary mb-4">
         {icon}
       </div>
-      <h3 className="text-lg font-medium text-zinc-50 mb-2">{title}</h3>
-      <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
+      <h3 className="text-heading text-foreground mb-2">{title}</h3>
+      <p className="text-body text-sm">{description}</p>
     </div>
   );
 }

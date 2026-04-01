@@ -1,20 +1,60 @@
 @import "tailwindcss";
 
-:root {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "Space Mono", ui-monospace, monospace;
+/* ============================================
+   DOPPEL Design System
+   Inspired by Vercel, Linear, Raycast
+   ============================================ */
 
-  /* Design tokens */
-  --background: 9 9 11; /* zinc-950 */
-  --foreground: 250 250 250; /* zinc-50 */
-  --muted: 39 39 42; /* zinc-800 */
-  --muted-foreground: 161 161 170; /* zinc-400 */
-  --accent: 124 58 237; /* violet-600 */
-  --accent-foreground: 250 250 250;
-  --border: 39 39 42; /* zinc-800 */
-  --ring: 124 58 237;
-  --radius: 0.5rem;
+:root {
+  /* Typography */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  /* Core palette - Dark mode first */
+  --background: 0 0 0;           /* Pure black like Vercel */
+  --background-secondary: 10 10 10;
+  --foreground: 250 250 250;     /* zinc-50 */
+  
+  /* Surface layers */
+  --surface-1: 18 18 18;         /* Subtle card bg */
+  --surface-2: 24 24 24;         /* Elevated surface */
+  --surface-3: 32 32 32;         /* Interactive hover */
+  
+  /* Borders - very subtle */
+  --border: 255 255 255;         /* White at low opacity */
+  --border-opacity: 0.08;
+  
+  /* Text hierarchy */
+  --text-primary: 255 255 255;
+  --text-secondary: 163 163 163; /* neutral-400 */
+  --text-tertiary: 115 115 115;  /* neutral-500 */
+  --text-muted: 82 82 82;        /* neutral-600 */
+  
+  /* Accent - warm white with subtle blue tint for trust */
+  --accent: 255 255 255;
+  --accent-muted: 163 163 163;
+  
+  /* Status colors */
+  --success: 34 197 94;          /* green-500 */
+  --warning: 251 191 36;         /* amber-400 */
+  --error: 239 68 68;            /* red-500 */
+  
+  /* Interactive states */
+  --ring: 255 255 255;
+  --ring-opacity: 0.2;
+  
+  /* Radius scale */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
 }
+
+/* ============================================
+   Base styles
+   ============================================ */
 
 * {
   box-sizing: border-box;
@@ -24,68 +64,228 @@
 
 html {
   font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
   min-height: 100vh;
+  line-height: 1.5;
 }
 
-/* Focus visible styles */
+/* Selection */
+::selection {
+  background: rgb(var(--foreground) / 0.15);
+}
+
+/* Focus states - subtle ring */
 :focus-visible {
-  outline: 2px solid rgb(var(--ring));
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(var(--ring) / var(--ring-opacity));
 }
 
-/* Scrollbar styling */
+/* ============================================
+   Scrollbar - Invisible until hover
+   ============================================ */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(var(--muted));
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--muted-foreground));
-  border-radius: 4px;
+  background: rgb(var(--text-muted) / 0.5);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--foreground) / 0.5);
+  background: rgb(var(--text-tertiary));
 }
 
-/* Animation utilities */
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
+/* ============================================
+   Typography utilities
+   ============================================ */
+
+.text-display {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
+
+.text-title {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.text-heading {
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.text-body {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgb(var(--text-secondary));
+}
+
+.text-caption {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgb(var(--text-tertiary));
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   Surface & Card styles
+   ============================================ */
+
+.surface {
+  background: rgb(var(--surface-1));
+  border: 1px solid rgb(var(--border) / var(--border-opacity));
+  border-radius: var(--radius-lg);
+}
+
+.surface-elevated {
+  background: rgb(var(--surface-2));
+  border: 1px solid rgb(var(--border) / 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 0 0 1px rgb(var(--border) / 0.05),
+    0 2px 4px rgb(0 0 0 / 0.1),
+    0 8px 16px rgb(0 0 0 / 0.1);
+}
+
+.surface-interactive {
+  background: rgb(var(--surface-1));
+  border: 1px solid rgb(var(--border) / var(--border-opacity));
+  border-radius: var(--radius-lg);
+  transition: all 150ms ease;
+}
+
+.surface-interactive:hover {
+  background: rgb(var(--surface-2));
+  border-color: rgb(var(--border) / 0.12);
+}
+
+/* ============================================
+   Button styles
+   ============================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  transition: all 150ms ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: rgb(var(--foreground));
+  color: rgb(var(--background));
+  padding: 0.625rem 1.25rem;
+  border: none;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgb(var(--surface-2));
+  color: rgb(var(--text-primary));
+  padding: 0.625rem 1.25rem;
+  border: 1px solid rgb(var(--border) / 0.1);
+}
+
+.btn-secondary:hover {
+  background: rgb(var(--surface-3));
+  border-color: rgb(var(--border) / 0.15);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: rgb(var(--text-secondary));
+  padding: 0.5rem 0.75rem;
+  border: none;
+}
+
+.btn-ghost:hover {
+  background: rgb(var(--surface-1));
+  color: rgb(var(--text-primary));
+}
+
+/* ============================================
+   Input styles
+   ============================================ */
+
+.input {
+  width: 100%;
+  background: rgb(var(--surface-1));
+  border: 1px solid rgb(var(--border) / 0.1);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  color: rgb(var(--text-primary));
+  transition: all 150ms ease;
+}
+
+.input::placeholder {
+  color: rgb(var(--text-muted));
+}
+
+.input:hover {
+  border-color: rgb(var(--border) / 0.15);
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgb(var(--border) / 0.2);
+  box-shadow: 0 0 0 3px rgb(var(--ring) / 0.05);
+}
+
+/* ============================================
+   Animations
+   ============================================ */
 
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-@keyframes slide-up {
+@keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -93,34 +293,213 @@ body {
   }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes waveform {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
+  animation: fade-in 400ms ease-out forwards;
 }
 
-.animate-slide-up {
-  animation: slide-up 0.6s ease-out forwards;
+.animate-fade-up {
+  animation: fade-up 500ms ease-out forwards;
 }
 
-/* Waveform visualization */
-.waveform-bar {
-  transition: height 0.1s ease-out;
+.animate-scale-in {
+  animation: scale-in 300ms ease-out forwards;
 }
 
-/* Glass effect */
-.glass {
-  background: rgb(var(--muted) / 0.5);
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Staggered animation delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* ============================================
+   Layout utilities
+   ============================================ */
+
+.page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.page-container-sm {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.page-container-md {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ============================================
+   Header component
+   ============================================ */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: rgb(var(--background) / 0.8);
   backdrop-filter: blur(12px);
-  border: 1px solid rgb(var(--border) / 0.5);
+  border-bottom: 1px solid rgb(var(--border) / var(--border-opacity));
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, rgb(var(--foreground)) 0%, rgb(var(--accent)) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.header-logo {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: rgb(var(--text-secondary));
+}
+
+/* ============================================
+   Gradient backgrounds
+   ============================================ */
+
+.gradient-radial {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgb(var(--surface-2)),
+    transparent
+  );
+}
+
+.gradient-subtle {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--surface-1)) 0%,
+    transparent 100%
+  );
+}
+
+/* Ambient glow effect */
+.glow {
+  position: relative;
+}
+
+.glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--foreground) / 0.1),
+    transparent 50%,
+    rgb(var(--foreground) / 0.05)
+  );
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.glow:hover::before {
+  opacity: 1;
+}
+
+/* ============================================
+   Status indicators
+   ============================================ */
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot-success {
+  background: rgb(var(--success));
+  box-shadow: 0 0 8px rgb(var(--success) / 0.5);
+}
+
+.status-dot-warning {
+  background: rgb(var(--warning));
+  animation: pulse-subtle 1.5s ease-in-out infinite;
+}
+
+.status-dot-error {
+  background: rgb(var(--error));
+}
+
+/* ============================================
+   Waveform visualization
+   ============================================ */
+
+.waveform-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 40px;
+}
+
+.waveform-bar {
+  width: 3px;
+  background: rgb(var(--text-tertiary));
+  border-radius: 2px;
+  transform-origin: center;
+  animation: waveform 1s ease-in-out infinite;
+}
+
+.waveform-bar-active {
+  background: rgb(var(--foreground));
 }

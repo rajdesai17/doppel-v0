@@ -3,12 +3,11 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const LOADING_MESSAGES = [
-  "Analyzing your voice patterns...",
-  "Creating your voice clone...",
-  "Understanding your situation...",
-  "Generating future persona...",
-  "Preparing conversation...",
-  "Almost ready...",
+  "Analyzing voice patterns",
+  "Creating voice clone",
+  "Understanding context",
+  "Generating persona",
+  "Preparing conversation",
 ];
 
 export function LoadingPage() {
@@ -28,7 +27,7 @@ export function LoadingPage() {
       setProgress((prev) => Math.min(prev + 2, 95));
     }, 200);
 
-    // Check if session is ready (poll status)
+    // Check if session is ready
     const checkReady = setInterval(async () => {
       try {
         const response = await fetch(`/api/session/${sessionId}/status`);
@@ -47,7 +46,7 @@ export function LoadingPage() {
       }
     }, 2000);
 
-    // Fallback: redirect after max time
+    // Fallback redirect
     const timeout = setTimeout(() => {
       navigate(`/conversation/${sessionId}`);
     }, 15000);
@@ -61,51 +60,46 @@ export function LoadingPage() {
   }, [sessionId, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 h-14 flex items-center justify-between px-6 border-b border-zinc-800/30 bg-zinc-950/80 backdrop-blur-md">
-        <Link
-          to="/setup"
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
-        >
+      <header className="header">
+        <Link to="/setup" className="btn-ghost flex items-center gap-2">
           <ArrowLeft className="size-4" />
-          Back
+          <span className="hidden sm:inline">Back</span>
         </Link>
-        <div className="font-mono text-sm tracking-[0.2em] text-zinc-400">
-          DOPPEL
-        </div>
+        <span className="header-logo">DOPPEL</span>
         <div className="w-16" />
       </header>
 
       {/* Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="max-w-md w-full text-center">
-          {/* Animated orb */}
-          <div className="relative size-28 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full bg-violet-500/15 animate-pulse-glow" />
-            <div className="absolute inset-4 rounded-full bg-violet-500/20 animate-pulse-glow" style={{ animationDelay: "200ms" }} />
-            <div className="absolute inset-8 rounded-full bg-violet-500/25 animate-pulse-glow" style={{ animationDelay: "400ms" }} />
+        <div className="max-w-sm w-full text-center">
+          {/* Animated loader */}
+          <div className="relative size-24 mx-auto mb-10">
+            <div className="absolute inset-0 rounded-full bg-surface-1 animate-breathe" />
+            <div className="absolute inset-3 rounded-full bg-surface-2 animate-breathe" style={{ animationDelay: "150ms" }} />
+            <div className="absolute inset-6 rounded-full bg-surface-3 animate-breathe" style={{ animationDelay: "300ms" }} />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="size-8 text-violet-400 animate-spin" />
+              <Loader2 className="size-5 text-text-secondary animate-spin" />
             </div>
           </div>
 
-          {/* Status message */}
-          <h2 className="text-2xl font-semibold text-zinc-50 mb-3">
-            Forming your future self
+          {/* Status */}
+          <h2 className="text-title text-foreground mb-3">
+            Creating your future self
           </h2>
-          <p className="text-zinc-400 mb-8 h-6 transition-all duration-300">
-            {LOADING_MESSAGES[messageIndex]}
+          <p className="text-body mb-10 h-6">
+            {LOADING_MESSAGES[messageIndex]}...
           </p>
 
           {/* Progress bar */}
-          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mb-4">
+          <div className="w-full h-1 bg-surface-1 rounded-full overflow-hidden mb-3">
             <div
-              className="h-full bg-violet-500 transition-all duration-200"
+              className="h-full bg-foreground transition-all duration-200"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-xs text-zinc-500">{progress}% complete</p>
+          <p className="text-mono text-text-muted text-xs">{progress}%</p>
         </div>
       </main>
     </div>
