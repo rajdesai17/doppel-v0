@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Check, RotateCcw, Play, Pause } from "lucide-react";
+import { cn } from "../lib/utils";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
@@ -129,8 +130,8 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   };
 
   const progress = (elapsed / duration) * 100;
+  const remaining = duration - elapsed;
 
-  // Format time as M:SS
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -139,74 +140,87 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
   return (
     <div className="flex flex-col items-center">
-      {/* Status indicator */}
-      <div className="h-10 flex items-center justify-center mb-6">
+      {/* Recording orb / status */}
+      <div className="relative size-24 flex items-center justify-center mb-8">
         {status === "recording" ? (
-          <div className="flex items-center gap-2">
-            <span className="relative flex size-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-              <span className="relative inline-flex rounded-full size-3 bg-red-500" />
-            </span>
-            <span className="font-sans text-sm font-medium text-red-500">Recording</span>
-          </div>
+          <>
+            <div className="absolute inset-0 rounded-full bg-red-500/10 animate-breathe" />
+            <div className="absolute inset-3 rounded-full bg-red-500/15 animate-breathe" style={{ animationDelay: "300ms" }} />
+            <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center">
+              <div className="size-3 rounded-full bg-red-500 animate-pulse" />
+            </div>
+          </>
         ) : status === "recorded" ? (
-          <div className="flex items-center gap-2">
-            <span className="size-3 rounded-full bg-emerald-500" />
-            <span className="font-sans text-sm font-medium text-emerald-500">Recorded</span>
+          <div className="size-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+            <Check className="size-5 text-emerald-500" />
           </div>
         ) : (
-          <Mic className="size-[22px] text-[#444]" />
+          <div className="size-12 rounded-full bg-[#111] border border-[#1a1a1a] flex items-center justify-center">
+            <Mic className="size-5 text-[#525252]" />
+          </div>
         )}
       </div>
 
-      {/* Large timer - DM Mono, 96px */}
-      <div className="text-timer text-[96px] font-bold text-white leading-none mb-4">
+      {/* Timer */}
+      <div className="text-timer text-[56px] font-medium text-white leading-none mb-2">
         {formatTimer(elapsed)}
       </div>
 
-      {/* Progress bar - 384px wide, 1px height */}
-      <div className="w-full max-w-[384px] mb-12">
-        <div className="w-full h-[1px] bg-[#222] overflow-hidden">
+      {/* Status text */}
+      <p className="font-sans text-[13px] text-[#525252] mb-8">
+        {status === "recording"
+          ? `${remaining}s remaining`
+          : status === "recorded"
+            ? "Recording complete"
+            : `Record for ${duration} seconds`}
+      </p>
+
+      {/* Progress bar */}
+      <div className="w-full max-w-[360px] mb-10">
+        <div className="w-full h-[2px] bg-[#1a1a1a] rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#7C3AED] transition-all duration-100"
-            style={{ width: `${progress}%` }}
+            className={cn(
+              "h-full rounded-full transition-all duration-200",
+              status === "recording" ? "bg-red-500" : status === "recorded" ? "bg-emerald-500" : "bg-[#262626]"
+            )}
+            style={{ width: `${status === "recorded" ? 100 : progress}%` }}
           />
         </div>
       </div>
 
-      {/* Audio playback (after recording) */}
+      {/* Audio playback */}
       {status === "recorded" && audioUrl && (
-        <div className="w-full max-w-[384px] mb-6">
+        <div className="w-full max-w-[360px] mb-6">
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-[#111] border border-[#1C1C1C] font-sans text-white hover:border-[#333] transition-colors duration-150"
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-[#111] border border-[#1a1a1a] font-sans text-[14px] text-[#a1a1a1] hover:text-white hover:border-[#262626] transition-all duration-150"
           >
             {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
-            {isPlaying ? "Pause" : "Play Recording"}
+            {isPlaying ? "Pause" : "Play recording"}
           </button>
         </div>
       )}
 
-      {/* Action buttons - 384px wide, 56px height, 12px radius */}
-      <div className="w-full max-w-[384px]">
+      {/* Action buttons */}
+      <div className="w-full max-w-[360px]">
         {status === "idle" && (
           <button
             onClick={startRecording}
-            className="w-full h-14 flex items-center justify-center gap-3 bg-[#7C3AED] text-white font-sans font-medium text-[15px] rounded-xl hover:bg-[#6D28D9] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(124,58,237,0.35)] transition-all duration-150"
+            className="w-full h-12 flex items-center justify-center gap-2.5 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
           >
-            <Mic className="size-5" />
-            Start Recording
+            <Mic className="size-[18px]" />
+            Start recording
           </button>
         )}
 
         {status === "recording" && (
           <button
             onClick={stopRecording}
-            className="w-full h-14 flex items-center justify-center gap-2 bg-red-600 text-white font-sans font-medium text-[15px] rounded-xl hover:bg-red-700 transition-colors duration-150"
+            className="w-full h-12 flex items-center justify-center gap-2 bg-red-600 text-white font-sans font-medium text-[14px] rounded-xl hover:bg-red-700 transition-colors duration-150"
           >
             <Square className="size-4" />
-            Stop Recording
+            Stop recording
           </button>
         )}
 
@@ -214,14 +228,14 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
           <div className="flex gap-3">
             <button
               onClick={resetRecording}
-              className="flex-1 h-14 flex items-center justify-center gap-2 bg-[#1C1C1C] text-white font-sans font-medium text-[15px] rounded-xl border border-[#2a2a2a] hover:bg-[#222] hover:border-[#333] transition-colors duration-150"
+              className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#111] text-[#a1a1a1] font-sans font-medium text-[14px] rounded-xl border border-[#1a1a1a] hover:text-white hover:border-[#262626] transition-all duration-150"
             >
               <RotateCcw className="size-4" />
               Re-record
             </button>
             <button
               onClick={confirmRecording}
-              className="flex-1 h-14 flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-sans font-medium text-[15px] rounded-xl hover:bg-[#6D28D9] transition-colors duration-150"
+              className="flex-1 h-12 flex items-center justify-center gap-2 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
             >
               <Check className="size-4" />
               Use this
@@ -231,7 +245,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
 
         {status === "error" && (
           <div className="text-center">
-            <p className="font-sans text-sm text-red-400 mb-6 max-w-sm">
+            <p className="font-sans text-[13px] text-red-400 mb-4 max-w-sm mx-auto leading-relaxed">
               {errorMsg || "Could not access microphone."}
             </p>
             <button
@@ -239,7 +253,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
                 setStatus("idle");
                 setErrorMsg(null);
               }}
-              className="font-sans text-[#555] hover:text-white text-sm transition-colors duration-150"
+              className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-150"
             >
               Try again
             </button>

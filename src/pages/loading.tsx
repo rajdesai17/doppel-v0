@@ -52,47 +52,54 @@ export function LoadingPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-black">
-      {/* Header */}
-      <nav className="h-14 flex items-center justify-between px-12 border-b border-[#1C1C1C]">
-        <Link 
-          to="/setup" 
-          className="font-sans text-[13px] text-[#555] hover:text-white transition-colors duration-200"
+      {/* Nav */}
+      <nav className="h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a]">
+        <Link
+          to="/setup"
+          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
         >
-          ← back
+          &larr; Back
         </Link>
-        <span className="font-sans text-[13px] font-medium tracking-[0.2em] text-white uppercase">
-          DOPPEL
+        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
+          Doppel
         </span>
         <div className="w-12" />
       </nav>
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="max-w-sm w-full text-center">
+        <div className="max-w-sm w-full text-center stagger">
           {/* Processing orb */}
-          <div className="relative size-[140px] mx-auto mb-10">
-            <div className="absolute inset-0 rounded-full bg-[#7C3AED] opacity-[0.12] animate-breathe" />
-            <div className="absolute inset-5 rounded-full bg-[#7C3AED] opacity-20 animate-breathe" style={{ animationDelay: "300ms" }} />
-            <div className="absolute inset-10 rounded-full bg-[#7C3AED] opacity-[0.35] animate-breathe" style={{ animationDelay: "600ms" }} />
-            <div className="absolute inset-[50px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_50px_rgba(124,58,237,0.5)]" />
+          <div className="relative size-32 mx-auto mb-12">
+            <div className="absolute inset-0 rounded-full bg-[#7C3AED]/10 animate-breathe" />
+            <div className="absolute inset-4 rounded-full bg-[#7C3AED]/15 animate-breathe" style={{ animationDelay: "300ms" }} />
+            <div className="absolute inset-8 rounded-full bg-[#7C3AED]/25 animate-breathe" style={{ animationDelay: "600ms" }} />
+            <div className="absolute inset-[44px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_40px_rgba(124,58,237,0.4)]" />
           </div>
 
           {/* Status */}
-          <h2 className="font-display text-[36px] font-normal text-white mb-3">
-            Creating your future self
-          </h2>
-          <p className="font-sans text-[17px] text-[#666] mb-10 h-6">
-            {LOADING_MESSAGES[messageIndex]}...
-          </p>
-
-          {/* Progress bar */}
-          <div className="w-full h-[1px] bg-[#222] overflow-hidden mb-3">
-            <div
-              className="h-full bg-[#7C3AED] transition-all duration-200"
-              style={{ width: `${progress}%` }}
-            />
+          <div>
+            <h2 className="font-display text-[36px] text-white mb-3 leading-tight">
+              Creating your future self
+            </h2>
           </div>
-          <p className="font-mono text-[11px] tracking-[0.1em] text-[#444]">{progress}%</p>
+
+          <div>
+            <p className="font-sans text-[15px] text-[#666] mb-10 h-6">
+              {LOADING_MESSAGES[messageIndex]}...
+            </p>
+          </div>
+
+          {/* Progress */}
+          <div>
+            <div className="w-full h-[2px] bg-[#1a1a1a] rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full bg-[#7C3AED] rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="font-mono text-[11px] tracking-[0.1em] text-[#404040]">{progress}%</p>
+          </div>
         </div>
       </div>
     </main>

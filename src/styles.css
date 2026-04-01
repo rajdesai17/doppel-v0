@@ -2,51 +2,17 @@
 
 /* ============================================
    DOPPEL Design System
-   Refined brutalist editorial. Pure black.
+   Vercel-grade precision minimalism
    ============================================ */
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
   --font-mono: "DM Mono", "Geist Mono", ui-monospace, monospace;
 }
 
-/* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif&display=swap');
-
 /* ============================================
-   Design Tokens
-   ============================================ */
-
-:root {
-  /* Core palette */
-  --bg: #000;
-  --fg: #fff;
-  --muted: #555;
-  --muted-light: #666;
-  --accent: #7C3AED;
-  --accent-hover: #6D28D9;
-  --border: #1C1C1C;
-  --border-light: #2a2a2a;
-  --surface: #111;
-  
-  /* Spacing - 8px base grid */
-  --space-1: 8px;
-  --space-2: 16px;
-  --space-3: 24px;
-  --space-4: 32px;
-  --space-5: 40px;
-  --space-6: 48px;
-  --space-7: 56px;
-  --space-8: 64px;
-  --space-10: 80px;
-  
-  /* Nav height */
-  --nav-height: 56px;
-}
-
-/* ============================================
-   Base Styles
+   Base
    ============================================ */
 
 * {
@@ -61,8 +27,8 @@ html {
 }
 
 body {
-  background-color: var(--bg);
-  color: var(--fg);
+  background-color: #000;
+  color: #ededed;
   font-family: var(--font-sans);
   line-height: 1.5;
   min-height: 100vh;
@@ -73,8 +39,8 @@ body {
 }
 
 :focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.5);
+  outline: 2px solid rgba(124, 58, 237, 0.5);
+  outline-offset: 2px;
 }
 
 /* Scrollbar */
@@ -88,34 +54,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222;
+  background: #262626;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333;
-}
-
-/* ============================================
-   Typography
-   ============================================ */
-
-/* Serif display - Instrument Serif */
-.font-display {
-  font-family: var(--font-serif);
-  font-weight: 400;
-}
-
-/* Monospace - DM Mono */
-.font-mono {
-  font-family: var(--font-mono);
-}
-
-/* Timer - large monospace with tabular nums */
-.text-timer {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  background: #404040;
 }
 
 /* ============================================
@@ -138,11 +82,6 @@ body {
   to { opacity: 1; }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
 @keyframes breathe {
   0%, 100% {
     transform: scale(1);
@@ -154,8 +93,29 @@ body {
   }
 }
 
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.4); }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .animate-fade-up {
-  animation: fade-up 600ms ease-out forwards;
+  animation: fade-up 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-fade-in {
@@ -166,14 +126,33 @@ body {
   animation: breathe 2.5s ease-in-out infinite;
 }
 
-/* ============================================
-   Transitions
-   ============================================ */
-
-.transition-default {
-  transition: all 150ms ease;
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
-.transition-colors {
-  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+/* Staggered entrance for child elements */
+.stagger > * {
+  opacity: 0;
+  animation: fade-up 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 100ms; }
+.stagger > *:nth-child(3) { animation-delay: 200ms; }
+.stagger > *:nth-child(4) { animation-delay: 300ms; }
+.stagger > *:nth-child(5) { animation-delay: 400ms; }
+.stagger > *:nth-child(6) { animation-delay: 500ms; }
+
+/* ============================================
+   Typography utilities
+   ============================================ */
+
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+.text-timer {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }

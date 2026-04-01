@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { VoiceRecorder } from "../components/voice-recorder";
 import { getUserId, blobToBase64 } from "../lib/utils";
 
@@ -8,7 +8,7 @@ type Step = "voice" | "situation" | "processing";
 
 const STEPS = [
   { id: "voice", label: "Voice" },
-  { id: "situation", label: "Situation" },
+  { id: "situation", label: "Context" },
   { id: "processing", label: "Create" },
 ] as const;
 
@@ -106,77 +106,83 @@ export function SetupPage() {
   return (
     <main className="min-h-screen flex flex-col bg-black">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-12 border-b border-[#1C1C1C] bg-black">
+      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black/80 backdrop-blur-xl">
         <Link
           to="/"
-          className="font-sans text-[13px] text-[#555] hover:text-white transition-colors duration-200"
+          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
         >
-          ← back
+          &larr; Back
         </Link>
-        <span className="font-sans text-[13px] font-medium tracking-[0.2em] text-white uppercase">
-          DOPPEL
+        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
+          Doppel
         </span>
         <div className="w-12" />
       </nav>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center pt-[120px] px-6 pb-16">
+      <div className="flex-1 flex flex-col items-center pt-[112px] px-6 pb-16">
         {/* Stepper */}
-        <div className="flex items-start justify-center mb-16">
+        <div className="flex items-center gap-0 mb-16">
           {STEPS.map((s, index) => (
-            <div key={s.id} className="flex items-start">
-              {/* Step Node */}
-              <div className="flex flex-col items-center">
+            <div key={s.id} className="flex items-center">
+              {/* Step node */}
+              <div className="flex flex-col items-center gap-2">
                 <div
-                  className={`size-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200 ${
+                  className={`size-8 rounded-full flex items-center justify-center text-[12px] font-medium transition-all duration-300 ${
                     currentStepIndex === index
-                      ? "bg-[#7C3AED] text-white"
+                      ? "bg-white text-black"
                       : currentStepIndex > index
-                      ? "bg-[#7C3AED]/20 text-[#7C3AED]"
-                      : "bg-[#1C1C1C] text-[#555] border border-[#2a2a2a]"
+                        ? "bg-white/10 text-white"
+                        : "bg-[#111] text-[#525252] border border-[#262626]"
                   }`}
                 >
-                  {currentStepIndex > index ? <Check className="size-4" /> : index + 1}
+                  {currentStepIndex > index ? <Check className="size-3.5" /> : index + 1}
                 </div>
                 <span
-                  className={`font-sans text-[11px] tracking-[0.05em] uppercase mt-2 ${
-                    currentStepIndex === index ? "text-[#7C3AED]" : "text-[#444]"
+                  className={`font-sans text-[11px] tracking-[0.05em] uppercase transition-colors duration-300 ${
+                    currentStepIndex === index
+                      ? "text-white"
+                      : currentStepIndex > index
+                        ? "text-[#666]"
+                        : "text-[#404040]"
                   }`}
                 >
                   {s.label}
                 </span>
               </div>
 
-              {/* Connector Line */}
+              {/* Connector */}
               {index < STEPS.length - 1 && (
-                <div
-                  className={`w-[72px] h-[1px] mt-[18px] mx-2 ${
-                    currentStepIndex > index ? "bg-[#7C3AED]" : "bg-[#2a2a2a]"
-                  }`}
-                />
+                <div className="relative w-16 md:w-20 mx-3 mt-[-18px]">
+                  <div className="h-px bg-[#1a1a1a]" />
+                  <div
+                    className="absolute top-0 left-0 h-px bg-white/20 transition-all duration-500"
+                    style={{ width: currentStepIndex > index ? "100%" : "0%" }}
+                  />
+                </div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Step Content */}
-        <div className="w-full max-w-[400px]">
+        {/* Step content */}
+        <div className="w-full max-w-[420px]">
           {/* Step 1: Voice */}
           {step === "voice" && (
             <div className="animate-fade-up">
-              <div className="text-center mb-14">
-                <h1 className="font-display text-[40px] font-normal text-white mb-3">
+              <div className="text-center mb-12">
+                <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1]">
                   Record your voice
                 </h1>
-                <p className="font-sans text-[15px] text-[#555]">
-                  Speak naturally for 30 seconds
+                <p className="font-sans text-[15px] text-[#666] leading-relaxed">
+                  Speak naturally for 30 seconds to create your voice clone.
                 </p>
               </div>
 
               <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
 
-              <p className="font-sans text-[12px] text-[#444] text-center mt-10">
-                Tip: Read something aloud or talk about your day.
+              <p className="font-sans text-[12px] text-[#404040] text-center mt-10 leading-relaxed">
+                Tip: Read something aloud, recite a quote, or talk about your day.
               </p>
             </div>
           )}
@@ -184,24 +190,24 @@ export function SetupPage() {
           {/* Step 2: Situation */}
           {step === "situation" && (
             <div className="animate-fade-up">
-              <div className="text-center mb-14">
-                <h1 className="font-display text-[40px] font-normal text-white mb-3">
+              <div className="text-center mb-12">
+                <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1]">
                   {"What's on your mind?"}
                 </h1>
-                <p className="font-sans text-[15px] text-[#555]">
-                  {"Describe a decision, crossroads, or question you're facing."}
+                <p className="font-sans text-[15px] text-[#666] leading-relaxed">
+                  {"Describe a decision or crossroads you're facing."}
                 </p>
               </div>
 
               {error && (
-                <div className="p-4 mb-8 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-sm text-red-400">{error}</p>
+                <div className="flex items-start gap-3 p-4 mb-8 rounded-xl bg-red-500/5 border border-red-500/10">
+                  <p className="font-sans text-[13px] text-red-400 leading-relaxed">{error}</p>
                 </div>
               )}
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-5">
                 <div>
-                  <label className="block font-sans text-sm text-[#666] mb-3 font-medium">
+                  <label className="block font-sans text-[13px] text-[#737373] mb-2 font-medium">
                     Your age
                   </label>
                   <input
@@ -210,30 +216,39 @@ export function SetupPage() {
                     onChange={(e) => setAge(parseInt(e.target.value) || 25)}
                     min={18}
                     max={80}
-                    className="w-full h-12 px-4 bg-[#111] border border-[#222] rounded-xl font-sans text-white focus:outline-none focus:border-[#7C3AED] transition-colors duration-150"
+                    className="w-full h-11 px-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl font-sans text-[15px] text-white focus:outline-none focus:border-[#404040] focus:ring-1 focus:ring-[#404040] transition-all duration-150"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-sans text-sm text-[#666] mb-3 font-medium">
+                  <label className="block font-sans text-[13px] text-[#737373] mb-2 font-medium">
                     Your situation
                   </label>
                   <textarea
                     value={situation}
                     onChange={(e) => setSituation(e.target.value)}
-                    placeholder="Describe your situation here. What are you struggling with? What is your crossroads?"
-                    rows={5}
-                    className="w-full px-4 py-3 bg-[#111] border border-[#222] rounded-xl font-sans text-white placeholder:text-[#444] focus:outline-none focus:border-[#7C3AED] resize-none transition-colors duration-150"
+                    placeholder="I'm trying to decide whether to leave my job and start my own company..."
+                    rows={4}
+                    className="w-full px-4 py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl font-sans text-[15px] text-white placeholder:text-[#333] focus:outline-none focus:border-[#404040] focus:ring-1 focus:ring-[#404040] resize-none transition-all duration-150 leading-relaxed"
                   />
                 </div>
 
                 <button
                   onClick={handleSubmit}
                   disabled={!situation.trim() || isProcessing}
-                  className="w-full h-14 flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-sans font-medium text-[15px] rounded-xl hover:bg-[#6D28D9] hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(124,58,237,0.35)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-150 mt-2"
+                  className="w-full h-12 flex items-center justify-center gap-2 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-150 mt-2"
                 >
-                  Meet your future self
-                  <ArrowRight className="size-4" />
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      Meet your future self
+                      <ArrowRight className="size-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -242,15 +257,14 @@ export function SetupPage() {
           {/* Step 3: Processing */}
           {step === "processing" && (
             <div className="animate-fade-up flex flex-col items-center py-12">
-              {/* Processing orb */}
-              <div className="relative size-[140px] mb-12">
-                <div className="absolute inset-0 rounded-full bg-[#7C3AED] opacity-[0.12] animate-breathe" />
-                <div className="absolute inset-5 rounded-full bg-[#7C3AED] opacity-20 animate-breathe" style={{ animationDelay: "300ms" }} />
-                <div className="absolute inset-10 rounded-full bg-[#7C3AED] opacity-[0.35] animate-breathe" style={{ animationDelay: "600ms" }} />
-                <div className="absolute inset-[50px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_50px_rgba(124,58,237,0.5)]" />
+              <div className="relative size-32 mb-12">
+                <div className="absolute inset-0 rounded-full bg-[#7C3AED]/10 animate-breathe" />
+                <div className="absolute inset-4 rounded-full bg-[#7C3AED]/15 animate-breathe" style={{ animationDelay: "300ms" }} />
+                <div className="absolute inset-8 rounded-full bg-[#7C3AED]/25 animate-breathe" style={{ animationDelay: "600ms" }} />
+                <div className="absolute inset-[44px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_40px_rgba(124,58,237,0.4)]" />
               </div>
 
-              <p className="font-sans text-lg text-[#999] text-center">
+              <p className="font-sans text-[15px] text-[#737373] text-center">
                 {processingMessage}
               </p>
             </div>
