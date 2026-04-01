@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { VoiceRecorder } from "../components/voice-recorder";
 import { getUserId, blobToBase64 } from "../lib/utils";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 
 type Step = "voice" | "situation" | "processing";
-
-const STEPS = [
-  { id: "voice", label: "Voice" },
-  { id: "situation", label: "Context" },
-  { id: "processing", label: "Create" },
-] as const;
 
 export function SetupPage() {
   const navigate = useNavigate();
@@ -101,176 +101,185 @@ export function SetupPage() {
     }
   };
 
-  const currentStepIndex = step === "voice" ? 0 : step === "situation" ? 1 : 2;
-
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black/80 backdrop-blur-xl">
-        <Link
-          to="/"
-          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
-        >
-          &larr; Back
-        </Link>
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <div className="w-12" />
-      </nav>
-
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center pt-[112px] px-6 pb-16">
-        {/* Stepper */}
-        <div className="flex items-center gap-0 mb-16">
-          {STEPS.map((s, index) => (
-            <div key={s.id} className="flex items-center">
-              {/* Step node */}
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className={`size-8 rounded-full flex items-center justify-center text-[12px] font-medium transition-all duration-300 ${
-                    currentStepIndex === index
-                      ? "bg-white text-black"
-                      : currentStepIndex > index
-                        ? "bg-white/10 text-white"
-                        : "bg-[#111] text-[#525252] border border-[#262626]"
-                  }`}
-                >
-                  {currentStepIndex > index ? <Check className="size-3.5" /> : index + 1}
-                </div>
-                <span
-                  className={`font-sans text-[11px] tracking-[0.05em] uppercase transition-colors duration-300 ${
-                    currentStepIndex === index
-                      ? "text-white"
-                      : currentStepIndex > index
-                        ? "text-[#666]"
-                        : "text-[#404040]"
-                  }`}
-                >
-                  {s.label}
-                </span>
-              </div>
-
-              {/* Connector */}
-              {index < STEPS.length - 1 && (
-                <div className="relative w-16 md:w-20 mx-3 mt-[-18px]">
-                  <div className="h-px bg-[#1a1a1a]" />
-                  <div
-                    className="absolute top-0 left-0 h-px bg-white/20 transition-all duration-500"
-                    style={{ width: currentStepIndex > index ? "100%" : "0%" }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Header */}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="size-4" />
+            <span>Back</span>
+          </Link>
+          <span className="text-sm font-medium tracking-tight">DOPPEL</span>
+          <div className="w-16" />
         </div>
+      </header>
 
-        {/* Step content */}
-        <div className="w-full max-w-[420px]">
-          {/* Step 1: Voice */}
+      {/* Progress Steps */}
+      <div className="fixed inset-x-0 top-14 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-12 max-w-md items-center justify-center gap-8 px-6">
+          <StepIndicator step={1} label="Voice" active={step === "voice"} completed={step !== "voice"} />
+          <div className="h-px w-8 bg-border" />
+          <StepIndicator step={2} label="Details" active={step === "situation"} completed={step === "processing"} />
+          <div className="h-px w-8 bg-border" />
+          <StepIndicator step={3} label="Create" active={step === "processing"} completed={false} />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex flex-1 flex-col items-center justify-center px-6 pt-32 pb-12">
+        <AnimatePresence mode="wait">
+          {/* Step 1: Voice Recording */}
           {step === "voice" && (
-            <div className="animate-fade-up">
-              <div className="text-center mb-12">
-                <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1]">
-                  Record your voice
-                </h1>
-                <p className="font-sans text-[15px] text-[#666] leading-relaxed">
-                  Speak naturally for 30 seconds to create your voice clone.
+            <motion.div
+              key="voice"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="flex w-full max-w-md flex-col items-center"
+            >
+              <div className="mb-8 text-center">
+                <h1 className="mb-2 text-2xl font-semibold tracking-tight">Record your voice</h1>
+                <p className="text-sm text-muted-foreground">
+                  Speak naturally for 30 seconds to create your voice clone
                 </p>
               </div>
-
               <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
-
-              <p className="font-sans text-[12px] text-[#404040] text-center mt-10 leading-relaxed">
-                Tip: Read something aloud, recite a quote, or talk about your day.
-              </p>
-            </div>
+            </motion.div>
           )}
 
-          {/* Step 2: Situation */}
+          {/* Step 2: Situation Details */}
           {step === "situation" && (
-            <div className="animate-fade-up">
-              <div className="text-center mb-12">
-                <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1]">
-                  {"What's on your mind?"}
-                </h1>
-                <p className="font-sans text-[15px] text-[#666] leading-relaxed">
-                  {"Describe a decision or crossroads you're facing."}
-                </p>
-              </div>
-
-              {error && (
-                <div className="flex items-start gap-3 p-4 mb-8 rounded-xl bg-red-500/5 border border-red-500/10">
-                  <p className="font-sans text-[13px] text-red-400 leading-relaxed">{error}</p>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-5">
-                <div>
-                  <label className="block font-sans text-[13px] text-[#737373] mb-2 font-medium">
-                    Your age
-                  </label>
-                  <input
-                    type="number"
-                    value={age}
-                    onChange={(e) => setAge(parseInt(e.target.value) || 25)}
-                    min={18}
-                    max={80}
-                    className="w-full h-11 px-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl font-sans text-[15px] text-white focus:outline-none focus:border-[#404040] focus:ring-1 focus:ring-[#404040] transition-all duration-150"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-sans text-[13px] text-[#737373] mb-2 font-medium">
-                    Your situation
-                  </label>
-                  <textarea
-                    value={situation}
-                    onChange={(e) => setSituation(e.target.value)}
-                    placeholder="I'm trying to decide whether to leave my job and start my own company..."
-                    rows={4}
-                    className="w-full px-4 py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl font-sans text-[15px] text-white placeholder:text-[#333] focus:outline-none focus:border-[#404040] focus:ring-1 focus:ring-[#404040] resize-none transition-all duration-150 leading-relaxed"
-                  />
-                </div>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={!situation.trim() || isProcessing}
-                  className="w-full h-12 flex items-center justify-center gap-2 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-150 mt-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      Meet your future self
-                      <ArrowRight className="size-4" />
-                    </>
+            <motion.div
+              key="situation"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-md"
+            >
+              <Card className="border-border/50">
+                <CardHeader className="text-center">
+                  <CardTitle className="text-xl">Tell us about yourself</CardTitle>
+                  <CardDescription>
+                    Describe a decision or crossroads you&apos;re facing
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {error && (
+                    <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                      {error}
+                    </div>
                   )}
-                </button>
-              </div>
-            </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSubmit();
+                    }}
+                    className="flex flex-col gap-5"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="age">Your current age</Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        value={age}
+                        onChange={(e) => setAge(parseInt(e.target.value) || 25)}
+                        min={18}
+                        max={80}
+                        className="h-10"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="situation">Your situation</Label>
+                      <Textarea
+                        id="situation"
+                        value={situation}
+                        onChange={(e) => setSituation(e.target.value)}
+                        placeholder="I'm trying to decide whether to leave my job and start my own company..."
+                        rows={4}
+                        className="resize-none"
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={!situation.trim() || isProcessing}
+                      size="lg"
+                      className="mt-2 h-11 w-full gap-2"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="animate-spin" data-icon="inline-start" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          Meet your future self
+                          <ArrowRight data-icon="inline-end" />
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </motion.div>
           )}
 
           {/* Step 3: Processing */}
           {step === "processing" && (
-            <div className="animate-fade-up flex flex-col items-center py-12">
-              <div className="relative size-32 mb-12">
-                <div className="absolute inset-0 rounded-full bg-[#7C3AED]/10 animate-breathe" />
-                <div className="absolute inset-4 rounded-full bg-[#7C3AED]/15 animate-breathe" style={{ animationDelay: "300ms" }} />
-                <div className="absolute inset-8 rounded-full bg-[#7C3AED]/25 animate-breathe" style={{ animationDelay: "600ms" }} />
-                <div className="absolute inset-[44px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_40px_rgba(124,58,237,0.4)]" />
+            <motion.div
+              key="processing"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center text-center"
+            >
+              <div className="mb-6 flex size-16 items-center justify-center rounded-full border border-border bg-secondary">
+                <Loader2 className="size-6 animate-spin text-foreground" />
               </div>
-
-              <p className="font-sans text-[15px] text-[#737373] text-center">
-                {processingMessage}
+              <h2 className="mb-2 text-lg font-medium">{processingMessage}</h2>
+              <p className="text-sm text-muted-foreground">
+                This usually takes about 30 seconds
               </p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+      </main>
+    </div>
+  );
+}
+
+function StepIndicator({ 
+  step, 
+  label, 
+  active, 
+  completed 
+}: { 
+  step: number; 
+  label: string; 
+  active: boolean; 
+  completed: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`flex size-6 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+          completed
+            ? "bg-foreground text-background"
+            : active
+            ? "border-2 border-foreground text-foreground"
+            : "border border-border text-muted-foreground"
+        }`}
+      >
+        {completed ? <Check className="size-3" /> : step}
       </div>
-    </main>
+      <span className={`text-xs ${active || completed ? "text-foreground" : "text-muted-foreground"}`}>
+        {label}
+      </span>
+    </div>
   );
 }

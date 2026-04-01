@@ -1,159 +1,181 @@
+import React from "react";
 import { Link } from "react-router-dom";
-import { Mic, Clock, MessageSquare, ArrowRight } from "lucide-react";
+import { ArrowRight, Mic, Brain, MessageSquare, ShieldCheck, AudioLines, RotateCcw } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { Button } from "../components/ui/button";
+import { FeatureCard } from "../components/ui/grid-feature-cards";
+
+const features = [
+  {
+    title: "Voice Cloning",
+    icon: Mic,
+    description: "Record a short sample and our AI learns your unique tone, cadence, and speaking patterns.",
+  },
+  {
+    title: "Contextual AI",
+    icon: Brain,
+    description: "Describe your crossroads and life situation. The AI builds a future perspective around your goals.",
+  },
+  {
+    title: "Live Conversation",
+    icon: MessageSquare,
+    description: "Speak naturally with your future self in real-time. Ask questions, share doubts, gain clarity.",
+  },
+  {
+    title: "Private & Secure",
+    icon: ShieldCheck,
+    description: "Your voice and personal data are processed securely and never stored beyond your session.",
+  },
+  {
+    title: "Natural Audio",
+    icon: AudioLines,
+    description: "Responses are generated in your own cloned voice for an authentic, immersive experience.",
+  },
+  {
+    title: "Save & Replay",
+    icon: RotateCcw,
+    description: "Revisit past conversations anytime. Reflect on the advice your future self shared with you.",
+  },
+];
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black/80 backdrop-blur-xl">
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <Link
-          to="/setup"
-          className="flex items-center gap-1.5 text-[13px] font-medium text-[#a1a1a1] hover:text-white transition-colors duration-200"
-        >
-          Begin
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </nav>
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Header */}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+          <span className="text-sm font-medium tracking-tight">DOPPEL</span>
+          <Link to="/setup">
+            <Button variant="outline" size="sm">
+              Get Started
+            </Button>
+          </Link>
+        </div>
+      </header>
 
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center text-center pt-14 min-h-screen px-6">
-        {/* Subtle radial glow behind heading */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] pointer-events-none"
-          style={{
-            background: "radial-gradient(ellipse at center, rgba(124,58,237,0.06) 0%, transparent 70%)",
-          }}
-        />
-
-        <div className="relative stagger">
+      <main className="flex flex-1 flex-col items-center px-6 pt-32">
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           {/* Eyebrow */}
-          <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-[#525252] mb-8">
-            A conversation across time
+          <p 
+            className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground animate-fade-up"
+            style={{ animationDelay: "0ms" }}
+          >
+            A Conversation Across Time
           </p>
 
-          {/* Heading */}
-          <h1 className="font-display text-[clamp(52px,9vw,96px)] text-white leading-[0.92] max-w-[800px] mb-8 text-balance">
-            Meet Your
-            <br />
-            Future Self
+          {/* Headline */}
+          <h1 
+            className="mb-6 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl animate-fade-up text-balance"
+            style={{ animationDelay: "100ms" }}
+          >
+            Meet Your Future Self
           </h1>
 
-          {/* Subtext */}
-          <p className="font-sans text-[16px] md:text-[17px] leading-[1.7] text-[#737373] max-w-[480px] mx-auto mb-14 text-pretty">
-            Clone your voice. Describe your crossroads. Have a real
-            conversation with who you could become — 10 years from now.
+          {/* Subheadline */}
+          <p 
+            className="mb-10 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg animate-fade-up text-pretty"
+            style={{ animationDelay: "200ms" }}
+          >
+            Clone your voice. Describe your crossroads. Have a real conversation 
+            with who you could become — 10 years from now.
           </p>
 
+          {/* Audio visualization */}
+          <div 
+            className="mb-10 flex h-8 w-48 items-center justify-center gap-1 animate-fade-up"
+            style={{ animationDelay: "300ms" }}
+          >
+            {Array.from({ length: 24 }).map((_, i) => {
+              const height = Math.sin((i / 24) * Math.PI) * 100;
+              return (
+                <div
+                  key={i}
+                  className="w-0.5 rounded-full bg-foreground/30 animate-pulse-subtle"
+                  style={{
+                    height: `${Math.max(8, height * 0.3)}px`,
+                    animationDelay: `${i * 80}ms`,
+                  }}
+                />
+              );
+            })}
+          </div>
+
           {/* CTA */}
-          <div>
-            <Link
-              to="/setup"
-              className="inline-flex items-center justify-center gap-2.5 font-sans text-[15px] font-medium bg-white text-black rounded-full px-8 py-3.5 hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
-            >
-              Start your conversation
-              <ArrowRight className="size-4" />
+          <div 
+            className="flex flex-col items-center gap-4 sm:flex-row animate-fade-up"
+            style={{ animationDelay: "400ms" }}
+          >
+            <Link to="/setup">
+              <Button size="lg" className="h-11 gap-2 rounded-full px-6 text-sm">
+                Start your conversation
+                <ArrowRight data-icon="inline-end" />
+              </Button>
             </Link>
-          </div>
-
-          {/* Waveform */}
-          <div className="mt-24">
-            <div
-              className="flex items-end justify-center gap-[3px] h-16"
-              style={{
-                maskImage:
-                  "linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%)",
-                WebkitMaskImage:
-                  "linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%)",
-              }}
-            >
-              {Array.from({ length: 48 }).map((_, i) => {
-                const center = 24;
-                const dist = Math.abs(i - center);
-                const bell = Math.exp(-Math.pow(dist / 10, 2));
-                const h = 6 + bell * 52;
-                const o = 0.08 + bell * 0.25;
-
-                return (
-                  <div
-                    key={i}
-                    className="w-[2px] rounded-full bg-white shrink-0"
-                    style={{
-                      height: `${h}px`,
-                      opacity: o,
-                      animation: `wave-bar 2s ease-in-out infinite`,
-                      animationDelay: `${i * 60}ms`,
-                      transformOrigin: "bottom",
-                    }}
-                  />
-                );
-              })}
-            </div>
+            <span className="text-xs text-muted-foreground">
+              Free to try · No account needed
+            </span>
           </div>
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="border-t border-[#1a1a1a]">
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#1a1a1a]">
-          <FeatureCard
-            icon={<Mic className="size-[18px]" />}
-            title="Clone Your Voice"
-            description="30 seconds of speech creates your unique voice profile for a seamless experience."
-            number="01"
-          />
-          <FeatureCard
-            icon={<Clock className="size-[18px]" />}
-            title="Future Persona"
-            description="AI generates a grounded persona from your context, informed by your situation."
-            number="02"
-          />
-          <FeatureCard
-            icon={<MessageSquare className="size-[18px]" />}
-            title="Real Conversation"
-            description="Speak naturally. Your future self responds in real-time, in your own voice."
-            number="03"
-          />
-        </div>
-      </section>
+        {/* Features Grid */}
+        <section className="mx-auto mt-32 w-full max-w-5xl pb-20">
+          <AnimatedContainer className="mx-auto mb-12 max-w-3xl text-center">
+            <h2 className="text-3xl font-bold tracking-wide text-balance md:text-4xl">
+              How It Works
+            </h2>
+            <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance">
+              Clone your voice, share your story, and talk to who you could become.
+            </p>
+          </AnimatedContainer>
+
+          <AnimatedContainer
+            delay={0.4}
+            className="grid grid-cols-1 divide-x divide-y divide-dashed border border-dashed sm:grid-cols-2 md:grid-cols-3"
+          >
+            {features.map((feature, i) => (
+              <FeatureCard key={i} feature={feature} />
+            ))}
+          </AnimatedContainer>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="h-12 flex items-center justify-center border-t border-[#1a1a1a]">
-        <p className="font-mono text-[11px] tracking-[0.08em] text-[#333]">
-          Built with Cloudflare Agents + ElevenLabs
-        </p>
+      <footer className="border-t border-border/50 py-6">
+        <div className="mx-auto max-w-5xl px-6">
+          <p className="text-center text-xs text-muted-foreground">
+            Built with AI voice synthesis technology
+          </p>
+        </div>
       </footer>
-    </main>
+    </div>
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-  number,
+function AnimatedContainer({
+  className,
+  delay = 0.1,
+  children,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  number: string;
+  delay?: number;
+  className?: string;
+  children: React.ReactNode;
 }) {
+  const shouldReduceMotion = useReducedMotion();
+
+  if (shouldReduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
-    <div className="group px-8 md:px-10 py-10 md:py-12 hover:bg-[#0a0a0a] transition-colors duration-300">
-      <div className="flex items-center justify-between mb-6">
-        <div className="size-10 rounded-xl bg-[#111] border border-[#1a1a1a] flex items-center justify-center text-[#525252] group-hover:text-[#7C3AED] group-hover:border-[#7C3AED]/20 transition-colors duration-300">
-          {icon}
-        </div>
-        <span className="font-mono text-[11px] text-[#333]">{number}</span>
-      </div>
-      <h3 className="font-sans text-[15px] font-semibold text-white mb-2">
-        {title}
-      </h3>
-      <p className="font-sans text-[13px] leading-[1.7] text-[#666] max-w-[280px]">
-        {description}
-      </p>
-    </div>
+    <motion.div
+      initial={{ filter: "blur(4px)", translateY: -8, opacity: 0 }}
+      whileInView={{ filter: "blur(0px)", translateY: 0, opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.8 }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }

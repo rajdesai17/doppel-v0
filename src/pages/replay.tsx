@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Share2, Download, Play, Pause, ArrowRight } from "lucide-react";
+import { Share2, Download, Play, Pause, ArrowRight, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn, formatDuration } from "../lib/utils";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Separator } from "../components/ui/separator";
+import { Progress } from "../components/ui/progress";
+import { Skeleton } from "../components/ui/skeleton";
 
 interface ReplayData {
   sessionId: string;
@@ -58,154 +64,188 @@ export function ReplayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="size-5 border-2 border-[#262626] border-t-[#666] rounded-full animate-spin" />
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="flex h-14 items-center justify-between border-b border-border px-6">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-20" />
+        </header>
+        <main className="flex flex-1 flex-col items-center px-6 py-12">
+          <div className="w-full max-w-lg">
+            <Skeleton className="mb-8 h-8 w-48 mx-auto" />
+            <Skeleton className="mb-4 h-4 w-32 mx-auto" />
+            <Skeleton className="mb-12 h-24 w-full rounded-xl" />
+            <Skeleton className="mb-4 h-4 w-20" />
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-black">
-        <h2 className="font-display text-[36px] text-white mb-3">Replay not found</h2>
-        <p className="font-sans text-[15px] text-[#666] mb-8">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight">
+          Replay not found
+        </h1>
+        <p className="mb-8 text-sm text-muted-foreground">
           This conversation may have expired.
         </p>
-        <Link
-          to="/"
-          className="font-sans text-[14px] font-medium text-black bg-white px-5 py-2.5 rounded-full hover:bg-[#e5e5e5] transition-colors duration-150"
-        >
-          Start a new conversation
+        <Link to="/">
+          <Button className="gap-2">
+            Start a new conversation
+            <ArrowRight data-icon="inline-end" />
+          </Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a]">
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Header */}
+      <header className="flex h-14 items-center justify-between border-b border-border px-6">
         <Link
           to="/setup"
-          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          &larr; New conversation
+          <ArrowLeft className="size-4" />
+          New conversation
         </Link>
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <button
-          onClick={handleShare}
-          className="font-sans text-[13px] text-[#525252] hover:text-white flex items-center gap-1.5 transition-colors duration-150"
-        >
-          <Share2 className="size-3.5" />
-          <span className="hidden sm:inline">{copied ? "Copied" : "Share"}</span>
-        </button>
-      </nav>
+        <Button onClick={handleShare} variant="outline" size="sm" className="gap-2">
+          <Share2 data-icon="inline-start" />
+          {copied ? "Copied" : "Share"}
+        </Button>
+      </header>
 
       {/* Content */}
-      <div className="flex-1 px-6 py-12 md:py-16">
-        <div className="max-w-[520px] mx-auto stagger">
+      <main className="flex flex-1 flex-col items-center px-6 py-12">
+        <div className="w-full max-w-lg">
           {/* Title */}
-          <div className="text-center mb-12">
-            <h1 className="font-display text-[40px] text-white mb-2 leading-tight">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 text-center"
+          >
+            <h1 className="mb-2 text-3xl font-semibold tracking-tight">
               Your Conversation
             </h1>
-            <p className="font-sans text-[15px] text-[#666]">
+            <p className="text-sm text-muted-foreground">
               {new Date(data.startedAt).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",
               })}{" "}
-              &middot; {formatDuration(data.duration)}
+              · {formatDuration(data.duration)}
             </p>
-          </div>
+          </motion.div>
 
           {/* Audio player */}
-          <div className="p-5 mb-12 rounded-2xl bg-[#0a0a0a] border border-[#1a1a1a]">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="size-12 rounded-full bg-white text-black flex items-center justify-center hover:bg-[#e5e5e5] active:scale-95 transition-all duration-150 shrink-0"
-              >
-                {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 ml-0.5" />}
-              </button>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="mb-12">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    size="icon-lg"
+                    className="shrink-0 rounded-full"
+                  >
+                    {isPlaying ? <Pause /> : <Play className="ml-0.5" />}
+                  </Button>
 
-              <div className="flex-1 min-w-0">
-                <div className="h-[3px] bg-[#1a1a1a] rounded-full overflow-hidden mb-2">
-                  <div
-                    className="h-full bg-white/80 rounded-full transition-all"
-                    style={{ width: `${data.duration ? (currentTime / data.duration) * 100 : 0}%` }}
-                  />
-                </div>
-                <div className="flex justify-between font-mono text-[11px] tracking-[0.05em] text-[#404040]">
-                  <span>{formatDuration(currentTime)}</span>
-                  <span>{formatDuration(data.duration)}</span>
-                </div>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <Progress
+                      value={data.duration ? (currentTime / data.duration) * 100 : 0}
+                      className="mb-2 h-1"
+                    />
+                    <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+                      <span>{formatDuration(currentTime)}</span>
+                      <span>{formatDuration(data.duration)}</span>
+                    </div>
+                  </div>
 
-              <a
-                href={`/api/audio/sessions/${sessionId}/full.mp3`}
-                download
-                className="size-10 rounded-xl bg-[#111] border border-[#1a1a1a] text-[#525252] flex items-center justify-center hover:text-white hover:border-[#262626] transition-all duration-150 shrink-0"
-              >
-                <Download className="size-4" />
-              </a>
-            </div>
-          </div>
+                  <a href={`/api/audio/sessions/${sessionId}/full.mp3`} download>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <Download />
+                    </Button>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Transcript */}
-          <div>
-            <h2 className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#333] mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Transcript
             </h2>
 
-            <div className="space-y-4">
+            <div className="flex flex-col gap-3">
               {data.transcript.map((entry, i) => (
                 <div
                   key={i}
-                  className={cn("flex gap-3", entry.speaker === "future" ? "flex-row-reverse" : "")}
+                  className={cn(
+                    "flex gap-3",
+                    entry.speaker === "future" ? "flex-row-reverse" : ""
+                  )}
                 >
                   <div
                     className={cn(
-                      "size-7 rounded-full flex items-center justify-center font-mono text-[9px] tracking-wider font-medium shrink-0 mt-1",
+                      "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium",
                       entry.speaker === "future"
-                        ? "bg-[#7C3AED]/15 text-[#7C3AED]"
-                        : "bg-[#111] text-[#525252]"
+                        ? "bg-foreground text-background"
+                        : "bg-secondary text-secondary-foreground"
                     )}
                   >
-                    {entry.speaker === "user" ? "N" : "F"}
+                    {entry.speaker === "user" ? "Y" : "F"}
                   </div>
                   <div
                     className={cn(
-                      "flex-1 px-4 py-3 rounded-xl",
+                      "flex-1 rounded-xl px-4 py-3",
                       entry.speaker === "future"
-                        ? "bg-[#7C3AED]/8 text-[#e5e5e5]"
-                        : "bg-[#0a0a0a] border border-[#1a1a1a] text-[#a1a1a1]"
+                        ? "bg-secondary"
+                        : "border border-border"
                     )}
                   >
-                    <p className="font-sans text-[14px] leading-[1.7]">{entry.text}</p>
-                    <p className="font-mono text-[10px] tracking-[0.05em] text-[#333] mt-2">
+                    <p className="text-sm leading-relaxed">{entry.text}</p>
+                    <p className="mt-2 text-xs tabular-nums text-muted-foreground">
                       {formatDuration(entry.timestamp - data.startedAt)}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
+
+          <Separator className="my-12" />
 
           {/* CTA */}
-          <div className="mt-16 text-center">
-            <Link
-              to="/setup"
-              className="inline-flex items-center gap-2 font-sans text-[14px] font-medium text-black bg-white px-6 py-3 rounded-full hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
-            >
-              Have another conversation
-              <ArrowRight className="size-4" />
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-center"
+          >
+            <Link to="/setup">
+              <Button size="lg" className="gap-2">
+                Have another conversation
+                <ArrowRight data-icon="inline-end" />
+              </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

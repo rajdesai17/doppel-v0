@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Check, RotateCcw, Play, Pause } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
+import { Button } from "./ui/button";
+import { Progress } from "./ui/progress";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
@@ -13,20 +16,45 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [frequencies, setFrequencies] = useState<number[]>(Array(32).fill(0));
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<number | null>(null);
   const blobRef = useRef<Blob | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
   }, [audioUrl]);
+
+  const updateFrequencies = useCallback(() => {
+    if (!analyzerRef.current) return;
+    
+    const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
+    analyzerRef.current.getByteFrequencyData(dataArray);
+    
+    const bands = [];
+    const bandSize = Math.floor(dataArray.length / 32);
+    for (let i = 0; i < 32; i++) {
+      const start = i * bandSize;
+      let sum = 0;
+      for (let j = 0; j < bandSize; j++) {
+        sum += dataArray[start + j];
+      }
+      bands.push(sum / bandSize / 255);
+    }
+    
+    setFrequencies(bands);
+    animationRef.current = requestAnimationFrame(updateFrequencies);
+  }, []);
 
   const startRecording = async () => {
     try {
@@ -46,6 +74,13 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         setErrorMsg("Your microphone is muted. Please unmute and try again.");
         return;
       }
+
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyzer = audioContext.createAnalyser();
+      analyzer.fftSize = 256;
+      source.connect(analyzer);
+      analyzerRef.current = analyzer;
 
       const mimeType = [
         "audio/webm;codecs=opus",
@@ -71,12 +106,16 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         setAudioUrl(url);
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        setFrequencies(Array(32).fill(0));
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setStatus("recording");
       setElapsed(0);
+
+      updateFrequencies();
 
       const startTime = Date.now();
       intervalRef.current = window.setInterval(() => {
@@ -130,7 +169,6 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   };
 
   const progress = (elapsed / duration) * 100;
-  const remaining = duration - elapsed;
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -139,127 +177,138 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   };
 
   return (
-    <div className="flex flex-col items-center">
-      {/* Recording orb / status */}
-      <div className="relative size-24 flex items-center justify-center mb-8">
-        {status === "recording" ? (
-          <>
-            <div className="absolute inset-0 rounded-full bg-red-500/10 animate-breathe" />
-            <div className="absolute inset-3 rounded-full bg-red-500/15 animate-breathe" style={{ animationDelay: "300ms" }} />
-            <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center">
-              <div className="size-3 rounded-full bg-red-500 animate-pulse" />
-            </div>
-          </>
-        ) : status === "recorded" ? (
-          <div className="size-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <Check className="size-5 text-emerald-500" />
-          </div>
-        ) : (
-          <div className="size-12 rounded-full bg-[#111] border border-[#1a1a1a] flex items-center justify-center">
-            <Mic className="size-5 text-[#525252]" />
-          </div>
-        )}
+    <div className="flex w-full max-w-sm flex-col items-center">
+      {/* Timer Display */}
+      <div className="mb-6 flex flex-col items-center">
+        <span className="tabular-nums text-5xl font-light tracking-tight text-foreground">
+          {formatTimer(elapsed)}
+        </span>
+        <span className="mt-1 text-xs text-muted-foreground">
+          / {formatTimer(duration)}
+        </span>
       </div>
 
-      {/* Timer */}
-      <div className="text-timer text-[56px] font-medium text-white leading-none mb-2">
-        {formatTimer(elapsed)}
+      {/* Progress Bar */}
+      <div className="mb-6 w-full">
+        <Progress value={progress} className="h-1" />
       </div>
 
-      {/* Status text */}
-      <p className="font-sans text-[13px] text-[#525252] mb-8">
-        {status === "recording"
-          ? `${remaining}s remaining`
-          : status === "recorded"
-            ? "Recording complete"
-            : `Record for ${duration} seconds`}
-      </p>
-
-      {/* Progress bar */}
-      <div className="w-full max-w-[360px] mb-10">
-        <div className="w-full h-[2px] bg-[#1a1a1a] rounded-full overflow-hidden">
-          <div
-            className={cn(
-              "h-full rounded-full transition-all duration-200",
-              status === "recording" ? "bg-red-500" : status === "recorded" ? "bg-emerald-500" : "bg-[#262626]"
-            )}
-            style={{ width: `${status === "recorded" ? 100 : progress}%` }}
-          />
-        </div>
+      {/* Waveform Visualization */}
+      <div className="mb-8 flex h-16 w-full items-center justify-center gap-0.5">
+        {frequencies.map((freq, i) => {
+          const height = status === "recording" 
+            ? Math.max(4, freq * 64)
+            : 4 + Math.sin(i * 0.3) * 2;
+          
+          return (
+            <motion.div
+              key={i}
+              animate={{ height }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={cn(
+                "w-1 rounded-full transition-colors",
+                status === "recording" && freq > 0.3
+                  ? "bg-foreground"
+                  : "bg-muted-foreground/30"
+              )}
+            />
+          );
+        })}
       </div>
 
-      {/* Audio playback */}
+      {/* Playback for recorded audio */}
       {status === "recorded" && audioUrl && (
-        <div className="w-full max-w-[360px] mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
-          <button
-            onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-[#111] border border-[#1a1a1a] font-sans text-[14px] text-[#a1a1a1] hover:text-white hover:border-[#262626] transition-all duration-150"
-          >
-            {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+          <Button onClick={togglePlayback} variant="outline" size="sm" className="gap-2">
+            {isPlaying ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
             {isPlaying ? "Pause" : "Play recording"}
-          </button>
-        </div>
+          </Button>
+        </motion.div>
       )}
 
-      {/* Action buttons */}
-      <div className="w-full max-w-[360px]">
+      {/* Action Buttons */}
+      <AnimatePresence mode="wait">
         {status === "idle" && (
-          <button
-            onClick={startRecording}
-            className="w-full h-12 flex items-center justify-center gap-2.5 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
+          <motion.div
+            key="start"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
           >
-            <Mic className="size-[18px]" />
-            Start recording
-          </button>
+            <Button onClick={startRecording} size="lg" className="h-11 gap-2 px-6">
+              <Mic data-icon="inline-start" />
+              Start recording
+            </Button>
+          </motion.div>
         )}
 
         {status === "recording" && (
-          <button
-            onClick={stopRecording}
-            className="w-full h-12 flex items-center justify-center gap-2 bg-red-600 text-white font-sans font-medium text-[14px] rounded-xl hover:bg-red-700 transition-colors duration-150"
+          <motion.div
+            key="stop"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
           >
-            <Square className="size-4" />
-            Stop recording
-          </button>
+            <Button onClick={stopRecording} variant="destructive" size="lg" className="h-11 gap-2 px-6">
+              <Square data-icon="inline-start" />
+              Stop recording
+            </Button>
+          </motion.div>
         )}
 
         {status === "recorded" && (
-          <div className="flex gap-3">
-            <button
-              onClick={resetRecording}
-              className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#111] text-[#a1a1a1] font-sans font-medium text-[14px] rounded-xl border border-[#1a1a1a] hover:text-white hover:border-[#262626] transition-all duration-150"
-            >
-              <RotateCcw className="size-4" />
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex gap-3"
+          >
+            <Button onClick={resetRecording} variant="outline" className="gap-2">
+              <RotateCcw data-icon="inline-start" />
               Re-record
-            </button>
-            <button
-              onClick={confirmRecording}
-              className="flex-1 h-12 flex items-center justify-center gap-2 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
-            >
-              <Check className="size-4" />
+            </Button>
+            <Button onClick={confirmRecording} className="gap-2">
+              <Check data-icon="inline-start" />
               Use this
-            </button>
-          </div>
+            </Button>
+          </motion.div>
         )}
 
         {status === "error" && (
-          <div className="text-center">
-            <p className="font-sans text-[13px] text-red-400 mb-4 max-w-sm mx-auto leading-relaxed">
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex flex-col items-center text-center"
+          >
+            <p className="mb-4 max-w-xs text-sm text-muted-foreground">
               {errorMsg || "Could not access microphone."}
             </p>
-            <button
+            <Button
               onClick={() => {
                 setStatus("idle");
                 setErrorMsg(null);
               }}
-              className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-150"
+              variant="ghost"
+              size="sm"
             >
               Try again
-            </button>
-          </div>
+            </Button>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* Tip */}
+      <p className="mt-8 text-center text-xs text-muted-foreground">
+        Tip: Read something aloud or talk about your day
+      </p>
     </div>
   );
 }

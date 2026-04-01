@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Progress } from "../components/ui/progress";
 
 const LOADING_MESSAGES = [
   "Analyzing voice patterns",
@@ -40,7 +43,10 @@ export function LoadingPage() {
       }
     }, 2000);
 
-    const timeout = setTimeout(() => navigate(`/conversation/${sessionId}`), 15000);
+    const timeout = setTimeout(
+      () => navigate(`/conversation/${sessionId}`),
+      15000
+    );
 
     return () => {
       clearInterval(messageInterval);
@@ -51,57 +57,35 @@ export function LoadingPage() {
   }, [sessionId, navigate]);
 
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a]">
-        <Link
-          to="/setup"
-          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
-        >
-          &larr; Back
-        </Link>
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <div className="w-12" />
-      </nav>
-
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="max-w-sm w-full text-center stagger">
-          {/* Processing orb */}
-          <div className="relative size-32 mx-auto mb-12">
-            <div className="absolute inset-0 rounded-full bg-[#7C3AED]/10 animate-breathe" />
-            <div className="absolute inset-4 rounded-full bg-[#7C3AED]/15 animate-breathe" style={{ animationDelay: "300ms" }} />
-            <div className="absolute inset-8 rounded-full bg-[#7C3AED]/25 animate-breathe" style={{ animationDelay: "600ms" }} />
-            <div className="absolute inset-[44px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_40px_rgba(124,58,237,0.4)]" />
-          </div>
-
-          {/* Status */}
-          <div>
-            <h2 className="font-display text-[36px] text-white mb-3 leading-tight">
-              Creating your future self
-            </h2>
-          </div>
-
-          <div>
-            <p className="font-sans text-[15px] text-[#666] mb-10 h-6">
-              {LOADING_MESSAGES[messageIndex]}...
-            </p>
-          </div>
-
-          {/* Progress */}
-          <div>
-            <div className="w-full h-[2px] bg-[#1a1a1a] rounded-full overflow-hidden mb-3">
-              <div
-                className="h-full bg-[#7C3AED] rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="font-mono text-[11px] tracking-[0.1em] text-[#404040]">{progress}%</p>
-          </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center text-center"
+      >
+        {/* Loading spinner */}
+        <div className="mb-8 flex size-20 items-center justify-center rounded-full border border-border">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
-    </main>
+
+        {/* Title */}
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-foreground">
+          Creating your future self
+        </h1>
+
+        {/* Status message */}
+        <p className="mb-8 text-sm text-muted-foreground">
+          {LOADING_MESSAGES[messageIndex]}...
+        </p>
+
+        {/* Progress bar */}
+        <div className="w-48">
+          <Progress value={progress} className="mb-2 h-1" />
+          <p className="text-xs tabular-nums text-muted-foreground">
+            {progress}%
+          </p>
+        </div>
+      </motion.div>
+    </div>
   );
 }
