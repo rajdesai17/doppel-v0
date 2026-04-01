@@ -89,7 +89,7 @@ export function ReplayPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
+      <header className="sticky top-0 z-10 h-14 flex items-center justify-between px-6 border-b border-zinc-800/30 bg-zinc-950/80 backdrop-blur-md">
         <Link
           to="/"
           className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
@@ -97,7 +97,7 @@ export function ReplayPage() {
           <ArrowLeft className="size-4" />
           New conversation
         </Link>
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
+        <div className="font-mono text-sm tracking-[0.2em] text-zinc-400">
           DOPPEL
         </div>
         <button
@@ -111,7 +111,7 @@ export function ReplayPage() {
 
       {/* Content */}
       <main className="flex-1 px-6 py-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-xl mx-auto">
           {/* Title */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold text-zinc-50 mb-2">
@@ -128,11 +128,11 @@ export function ReplayPage() {
           </div>
 
           {/* Audio player */}
-          <div className="glass rounded-xl p-6 mb-8">
+          <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-2xl p-5 mb-8">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="size-14 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 transition-colors"
+                className="size-14 rounded-full bg-violet-500 text-white flex items-center justify-center hover:bg-violet-400 transition-colors"
               >
                 {isPlaying ? (
                   <Pause className="size-6" />
@@ -142,7 +142,7 @@ export function ReplayPage() {
               </button>
 
               <div className="flex-1">
-                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-2">
+                <div className="h-1.5 bg-zinc-800/80 rounded-full overflow-hidden mb-2">
                   <div
                     className="h-full bg-violet-500 transition-all"
                     style={{

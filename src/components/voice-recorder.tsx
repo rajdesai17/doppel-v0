@@ -198,7 +198,7 @@ export function VoiceRecorder({
 
       {/* Progress bar */}
       {status === "recording" && (
-        <div className="w-full h-1 bg-zinc-800 rounded-full mb-6 overflow-hidden">
+        <div className="w-full h-1.5 bg-zinc-800/60 rounded-full mb-6 overflow-hidden">
           <div
             className="h-full bg-violet-500 transition-all duration-100"
             style={{ width: `${progress}%` }}
@@ -217,7 +217,7 @@ export function VoiceRecorder({
           />
           <button
             onClick={togglePlayback}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-800/60 text-zinc-200 hover:bg-zinc-700 transition-colors"
           >
             {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
             {isPlaying ? "Pause" : "Play Recording"}
@@ -230,7 +230,7 @@ export function VoiceRecorder({
         {status === "idle" && (
           <button
             onClick={startRecording}
-            className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-full font-medium hover:bg-violet-700 transition-colors"
+            className="flex items-center gap-2 bg-violet-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-violet-400 transition-colors"
           >
             <Mic className="size-5" />
             Start Recording
@@ -240,7 +240,7 @@ export function VoiceRecorder({
         {status === "recording" && (
           <button
             onClick={stopRecording}
-            className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-full font-medium hover:bg-red-700 transition-colors"
+            className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 transition-colors"
           >
             <Square className="size-5" />
             Stop
@@ -251,14 +251,14 @@ export function VoiceRecorder({
           <>
             <button
               onClick={resetRecording}
-              className="flex items-center gap-2 bg-zinc-800 text-zinc-300 px-5 py-3 rounded-full font-medium hover:bg-zinc-700 transition-colors"
+              className="flex items-center gap-2 bg-zinc-800/60 text-zinc-300 px-5 py-3 rounded-xl font-medium hover:bg-zinc-700 transition-colors"
             >
               <RotateCcw className="size-4" />
               Re-record
             </button>
             <button
               onClick={confirmRecording}
-              className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-full font-medium hover:bg-violet-700 transition-colors"
+              className="flex items-center gap-2 bg-violet-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-violet-400 transition-colors"
             >
               <Check className="size-5" />
               Use this recording

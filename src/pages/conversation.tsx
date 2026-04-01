@@ -187,7 +187,7 @@ export function ConversationPage() {
   return (
     <div className="min-h-screen flex flex-col bg-zinc-950">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
+      <header className="sticky top-0 z-10 h-14 flex items-center justify-between px-6 border-b border-zinc-800/30/30 bg-zinc-950/80 backdrop-blur-md">
         <Link
           to="/"
           className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
@@ -200,15 +200,15 @@ export function ConversationPage() {
             className={cn(
               "size-2 rounded-full",
               status === "connected"
-                ? "bg-green-500"
+                ? "bg-emerald-500"
                 : status === "connecting"
-                  ? "bg-yellow-500 animate-pulse"
+                  ? "bg-amber-500 animate-pulse"
                   : "bg-red-500"
             )}
           />
           <span className="text-xs text-zinc-400 capitalize">{status}</span>
         </div>
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
+        <div className="font-mono text-sm tracking-[0.2em] text-zinc-400">
           DOPPEL
         </div>
       </header>
@@ -216,10 +216,10 @@ export function ConversationPage() {
       {/* Main conversation view */}
       <main className="flex-1 flex flex-col lg:flex-row">
         {/* Split screen: User vs Future */}
-        <div className="flex-1 grid grid-cols-2 gap-px bg-zinc-800">
+        <div className="flex-1 grid grid-cols-2">
           {/* Present Self */}
           <div className="bg-zinc-950 flex flex-col items-center justify-center p-8">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">
+            <p className="text-xs text-zinc-500 uppercase tracking-[0.2em] mb-4">
               You — Now
             </p>
             <div
@@ -240,7 +240,7 @@ export function ConversationPage() {
 
           {/* Future Self */}
           <div className="bg-zinc-900 flex flex-col items-center justify-center p-8">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">
+            <p className="text-xs text-zinc-500 uppercase tracking-[0.2em] mb-4">
               You — 2035
             </p>
             <div
@@ -257,8 +257,8 @@ export function ConversationPage() {
         </div>
 
         {/* Transcript sidebar */}
-        <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-zinc-800 flex flex-col">
-          <div className="px-4 py-3 border-b border-zinc-800">
+        <aside className="w-full lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-zinc-800/30 flex flex-col">
+          <div className="px-4 py-3 border-b border-zinc-800/30">
             <h3 className="text-sm font-medium text-zinc-300">Transcript</h3>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-64 lg:max-h-none">
@@ -300,7 +300,7 @@ export function ConversationPage() {
       </main>
 
       {/* Controls */}
-      <footer className="border-t border-zinc-800 px-6 py-4">
+      <footer className="border-t border-zinc-800/30 px-6 py-5 bg-zinc-950">
         <div className="flex items-center justify-center gap-4">
           <button
             onClick={toggleMute}

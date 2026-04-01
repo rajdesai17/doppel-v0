@@ -63,7 +63,7 @@ export function LoadingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
+      <header className="sticky top-0 z-10 h-14 flex items-center justify-between px-6 border-b border-zinc-800/30 bg-zinc-950/80 backdrop-blur-md">
         <Link
           to="/setup"
           className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
@@ -71,7 +71,7 @@ export function LoadingPage() {
           <ArrowLeft className="size-4" />
           Back
         </Link>
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
+        <div className="font-mono text-sm tracking-[0.2em] text-zinc-400">
           DOPPEL
         </div>
         <div className="w-16" />
@@ -81,10 +81,10 @@ export function LoadingPage() {
       <main className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
           {/* Animated orb */}
-          <div className="relative size-32 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full bg-violet-600/20 animate-pulse-glow" />
-            <div className="absolute inset-4 rounded-full bg-violet-600/30 animate-pulse-glow" style={{ animationDelay: "200ms" }} />
-            <div className="absolute inset-8 rounded-full bg-violet-600/40 animate-pulse-glow" style={{ animationDelay: "400ms" }} />
+          <div className="relative size-28 mx-auto mb-8">
+            <div className="absolute inset-0 rounded-full bg-violet-500/15 animate-pulse-glow" />
+            <div className="absolute inset-4 rounded-full bg-violet-500/20 animate-pulse-glow" style={{ animationDelay: "200ms" }} />
+            <div className="absolute inset-8 rounded-full bg-violet-500/25 animate-pulse-glow" style={{ animationDelay: "400ms" }} />
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="size-8 text-violet-400 animate-spin" />
             </div>
