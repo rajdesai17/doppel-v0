@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { PageLayout, PageHeader, ProcessingOrb } from "../components/ui";
+import { Progress } from "../components/ui/progress";
 
 const LOADING_MESSAGES = [
   "Analyzing voice patterns",
@@ -10,8 +11,6 @@ const LOADING_MESSAGES = [
   "Generating persona",
   "Preparing conversation",
 ];
-
-const spring = { type: "spring", stiffness: 100, damping: 20 };
 
 export function LoadingPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -58,52 +57,35 @@ export function LoadingPage() {
   }, [sessionId, navigate]);
 
   return (
-    <PageLayout>
-      {/* Breathing orb */}
-      <ProcessingOrb />
-
-      {/* Title */}
-      <PageHeader
-        title="Creating your future self"
-        animated={false}
-        className="mb-4"
-      />
-
-      {/* Status message */}
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, delay: 0.2 }}
-        className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50 mb-10"
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center text-center"
       >
-        {LOADING_MESSAGES[messageIndex]}...
-      </motion.p>
+        {/* Loading spinner */}
+        <div className="mb-8 flex size-20 items-center justify-center rounded-full border border-border">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
 
-      {/* Progress bar */}
-      <ProgressBar progress={progress} />
-    </PageLayout>
-  );
-}
+        {/* Title */}
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-foreground">
+          Creating your future self
+        </h1>
 
-// Progress Bar Component
-function ProgressBar({ progress }: { progress: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.3 }}
-      className="w-48"
-    >
-      <div className="w-full h-px bg-white/10 rounded-full overflow-hidden mb-3">
-        <motion.div
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="h-full bg-white rounded-full"
-        />
-      </div>
-      <p className="font-mono text-[10px] tracking-[0.3em] text-white/30">
-        {progress}%
-      </p>
-    </motion.div>
+        {/* Status message */}
+        <p className="mb-8 text-sm text-muted-foreground">
+          {LOADING_MESSAGES[messageIndex]}...
+        </p>
+
+        {/* Progress bar */}
+        <div className="w-48">
+          <Progress value={progress} className="mb-2 h-1" />
+          <p className="text-xs tabular-nums text-muted-foreground">
+            {progress}%
+          </p>
+        </div>
+      </motion.div>
+    </div>
   );
 }

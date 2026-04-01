@@ -2,14 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Check, RotateCcw, Play, Pause } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
-import { Button } from "../../components/ui/button";
+import { Button } from "./ui/button";
+import { Progress } from "./ui/progress";
 
 interface VoiceRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
   duration: number;
 }
-
-const spring = { type: "spring", stiffness: 100, damping: 20 };
 
 export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderProps) {
   const [status, setStatus] = useState<"idle" | "recording" | "recorded" | "error">("idle");
@@ -17,7 +16,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [frequencies, setFrequencies] = useState<number[]>(Array(24).fill(0));
+  const [frequencies, setFrequencies] = useState<number[]>(Array(32).fill(0));
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -43,8 +42,8 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
     analyzerRef.current.getByteFrequencyData(dataArray);
     
     const bands = [];
-    const bandSize = Math.floor(dataArray.length / 24);
-    for (let i = 0; i < 24; i++) {
+    const bandSize = Math.floor(dataArray.length / 32);
+    for (let i = 0; i < 32; i++) {
       const start = i * bandSize;
       let sum = 0;
       for (let j = 0; j < bandSize; j++) {
@@ -108,7 +107,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        setFrequencies(Array(24).fill(0));
+        setFrequencies(Array(32).fill(0));
       };
 
       mediaRecorderRef.current = mediaRecorder;
@@ -169,9 +168,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
     }
   };
 
-  const progress = elapsed / duration;
-  const circumference = 2 * Math.PI * 120;
-  const strokeDashoffset = circumference * (1 - progress);
+  const progress = (elapsed / duration) * 100;
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -180,138 +177,72 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
   };
 
   return (
-    <div className="flex flex-col items-center">
-      {/* Extraction Ring - Massive centered circle */}
-      <div className="relative size-64 flex items-center justify-center mb-8">
-        {/* SVG Progress Ring */}
-        <svg className="absolute inset-0 progress-ring" viewBox="0 0 256 256">
-          {/* Base ring */}
-          <circle
-            className="progress-ring-bg"
-            cx="128"
-            cy="128"
-            r="120"
-            strokeWidth="1"
-          />
-          {/* Progress ring with glow */}
-          <circle
-            className={cn(
-              "progress-ring-fill",
-              status === "recorded" && "stroke-white"
-            )}
-            cx="128"
-            cy="128"
-            r="120"
-            strokeWidth="2"
-            strokeDasharray={circumference}
-            strokeDashoffset={status === "recorded" ? 0 : strokeDashoffset}
-          />
-        </svg>
-
-        {/* Center content - Timer */}
-        <div className="relative flex flex-col items-center justify-center">
-          <AnimatePresence mode="wait">
-            {status === "recording" ? (
-              <motion.span
-                key="recording"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={spring}
-                className="font-mono text-5xl text-white tracking-widest"
-              >
-                {formatTimer(elapsed)}
-              </motion.span>
-            ) : status === "recorded" ? (
-              <motion.div
-                key="recorded"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={spring}
-                className="flex flex-col items-center"
-              >
-                <Check className="size-8 text-white mb-2" />
-                <span className="font-mono text-3xl text-white tracking-widest">
-                  {formatTimer(elapsed)}
-                </span>
-              </motion.div>
-            ) : (
-              <motion.span
-                key="idle"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={spring}
-                className="font-mono text-5xl text-white tracking-widest"
-              >
-                0:00
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </div>
+    <div className="flex w-full max-w-sm flex-col items-center">
+      {/* Timer Display */}
+      <div className="mb-6 flex flex-col items-center">
+        <span className="tabular-nums text-5xl font-light tracking-tight text-foreground">
+          {formatTimer(elapsed)}
+        </span>
+        <span className="mt-1 text-xs text-muted-foreground">
+          / {formatTimer(duration)}
+        </span>
       </div>
 
-      {/* Waveform - Simple flex row of vertical bars */}
-      <div className="flex items-end justify-center gap-1 h-12 mb-8">
+      {/* Progress Bar */}
+      <div className="mb-6 w-full">
+        <Progress value={progress} className="h-1" />
+      </div>
+
+      {/* Waveform Visualization */}
+      <div className="mb-8 flex h-16 w-full items-center justify-center gap-0.5">
         {frequencies.map((freq, i) => {
           const height = status === "recording" 
-            ? Math.max(8, freq * 48)
-            : 8 + Math.sin(i * 0.5) * 4;
+            ? Math.max(4, freq * 64)
+            : 4 + Math.sin(i * 0.3) * 2;
           
           return (
             <motion.div
               key={i}
               animate={{ height }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
               className={cn(
-                "waveform-bar",
-                status === "recording" && freq > 0.3 && "active"
+                "w-1 rounded-full transition-colors",
+                status === "recording" && freq > 0.3
+                  ? "bg-foreground"
+                  : "bg-muted-foreground/30"
               )}
             />
           );
         })}
       </div>
 
-      {/* Audio playback */}
+      {/* Playback for recorded audio */}
       {status === "recorded" && audioUrl && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={spring}
           className="mb-6"
         >
           <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
-          <Button
-            onClick={togglePlayback}
-            variant="outline"
-            size="lg"
-            className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
-          >
-            {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
-            <span>{isPlaying ? "Pause" : "Play recording"}</span>
+          <Button onClick={togglePlayback} variant="outline" size="sm" className="gap-2">
+            {isPlaying ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
+            {isPlaying ? "Pause" : "Play recording"}
           </Button>
         </motion.div>
       )}
 
-      {/* Action Button */}
+      {/* Action Buttons */}
       <AnimatePresence mode="wait">
         {status === "idle" && (
           <motion.div
             key="start"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={spring}
+            exit={{ opacity: 0, y: -8 }}
           >
-            <Button
-              onClick={startRecording}
-              variant="outline"
-              size="lg"
-              className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
-            >
-              <Mic className="size-4" />
-              <span>Start recording</span>
+            <Button onClick={startRecording} size="lg" className="h-11 gap-2 px-6">
+              <Mic data-icon="inline-start" />
+              Start recording
             </Button>
           </motion.div>
         )}
@@ -319,18 +250,13 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         {status === "recording" && (
           <motion.div
             key="stop"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={spring}
+            exit={{ opacity: 0, y: -8 }}
           >
-            <Button
-              onClick={stopRecording}
-              size="lg"
-              className="rounded-full"
-            >
-              <Square className="size-4" />
-              <span>Stop recording</span>
+            <Button onClick={stopRecording} variant="destructive" size="lg" className="h-11 gap-2 px-6">
+              <Square data-icon="inline-start" />
+              Stop recording
             </Button>
           </motion.div>
         )}
@@ -338,28 +264,18 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         {status === "recorded" && (
           <motion.div
             key="confirm"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={spring}
+            exit={{ opacity: 0, y: -8 }}
             className="flex gap-3"
           >
-            <Button
-              onClick={resetRecording}
-              variant="outline"
-              size="lg"
-              className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white hover:text-black"
-            >
-              <RotateCcw className="size-4" />
-              <span>Re-record</span>
+            <Button onClick={resetRecording} variant="outline" className="gap-2">
+              <RotateCcw data-icon="inline-start" />
+              Re-record
             </Button>
-            <Button
-              onClick={confirmRecording}
-              size="lg"
-              className="rounded-full"
-            >
-              <Check className="size-4" />
-              <span>Use this</span>
+            <Button onClick={confirmRecording} className="gap-2">
+              <Check data-icon="inline-start" />
+              Use this
             </Button>
           </motion.div>
         )}
@@ -367,13 +283,12 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         {status === "error" && (
           <motion.div
             key="error"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={spring}
-            className="text-center"
+            exit={{ opacity: 0, y: -8 }}
+            className="flex flex-col items-center text-center"
           >
-            <p className="text-sm text-white/60 mb-4 max-w-sm leading-relaxed">
+            <p className="mb-4 max-w-xs text-sm text-muted-foreground">
               {errorMsg || "Could not access microphone."}
             </p>
             <Button
@@ -382,7 +297,7 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
                 setErrorMsg(null);
               }}
               variant="ghost"
-              className="text-white/40 hover:text-white"
+              size="sm"
             >
               Try again
             </Button>
@@ -390,8 +305,8 @@ export function VoiceRecorder({ onRecordingComplete, duration }: VoiceRecorderPr
         )}
       </AnimatePresence>
 
-      {/* Footer tip */}
-      <p className="mt-8 font-mono text-[10px] tracking-widest text-white/30 uppercase">
+      {/* Tip */}
+      <p className="mt-8 text-center text-xs text-muted-foreground">
         Tip: Read something aloud or talk about your day
       </p>
     </div>

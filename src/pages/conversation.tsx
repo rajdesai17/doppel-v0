@@ -4,12 +4,10 @@ import { PhoneOff, Mic, MicOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Conversation } from "@elevenlabs/client";
 import { cn } from "../lib/utils";
-import { Button } from "../../components/ui/button";
-import {
-  StatusIndicator,
-  BreathingCircle,
-  WaveformBars,
-} from "../components/ui";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
+import { Skeleton } from "../components/ui/skeleton";
 
 interface TranscriptEntry {
   speaker: "user" | "future";
@@ -18,8 +16,6 @@ interface TranscriptEntry {
 }
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
-
-const spring = { type: "spring", stiffness: 100, damping: 20 };
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -34,9 +30,7 @@ export function ConversationPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
-  const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(
-    null
-  );
+  const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -65,9 +59,7 @@ export function ConversationPage() {
 
   // Typewriter effect for latest AI message
   useEffect(() => {
-    const lastFutureMessage = [...transcript]
-      .reverse()
-      .find((t) => t.speaker === "future");
+    const lastFutureMessage = [...transcript].reverse().find((t) => t.speaker === "future");
     if (lastFutureMessage && activeSpeaker === "future") {
       setIsTyping(true);
       let index = 0;
@@ -117,16 +109,12 @@ export function ConversationPage() {
           throw new Error("Failed to get signed URL");
         }
 
-        const { signedUrl } = (await signedUrlRes.json()) as {
-          signedUrl: string;
-        };
+        const { signedUrl } = (await signedUrlRes.json()) as { signedUrl: string };
 
         if (cancelled) return;
 
         try {
-          const micStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
           micStream.getTracks().forEach((t) => t.stop());
         } catch {
           setStatus("error");
@@ -216,170 +204,167 @@ export function ConversationPage() {
   }, []);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-black">
+    <div className="flex h-screen flex-col bg-background lg:flex-row">
       {/* Main conversation area */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
-        {/* Status indicator */}
-        <StatusIndicator
-          status={status}
-          label={status === "connected" ? formatTime(elapsed) : status}
-          className="mb-12"
-        />
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* Status */}
+        <div className="mb-8 flex items-center gap-3">
+          <div
+            className={cn(
+              "size-2 rounded-full",
+              status === "connected" && "bg-green-500",
+              status === "connecting" && "bg-yellow-500 animate-pulse",
+              status === "disconnected" && "bg-muted-foreground",
+              status === "error" && "bg-destructive"
+            )}
+          />
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">
+            {status === "connected" ? formatTime(elapsed) : status}
+          </span>
+        </div>
 
-        {/* Central visual */}
-        <BreathingCircle
-          isActive={activeSpeaker !== null}
-          isSpeaking={activeSpeaker === "future"}
-          className="mb-12"
-        />
+        {/* Central visual - breathing circle */}
+        <div
+          className={cn(
+            "mb-8 flex size-32 items-center justify-center rounded-full border transition-all duration-500",
+            activeSpeaker === "future"
+              ? "scale-110 border-foreground/50 bg-foreground/5"
+              : activeSpeaker === "user"
+              ? "scale-105 border-foreground/30 bg-foreground/5"
+              : "border-border"
+          )}
+        >
+          <div
+            className={cn(
+              "size-16 rounded-full transition-all duration-500",
+              activeSpeaker === "future"
+                ? "bg-foreground/20 animate-pulse"
+                : activeSpeaker === "user"
+                ? "bg-foreground/10"
+                : "bg-muted"
+            )}
+          />
+        </div>
 
         {/* Speaker label */}
-        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-white/50 mb-6">
+        <Badge variant="secondary" className="mb-6">
           {activeSpeaker === "future"
             ? "Your Future Self"
             : activeSpeaker === "user"
-              ? "You"
-              : "Waiting"}
-        </p>
+            ? "You"
+            : "Waiting..."}
+        </Badge>
 
         {/* Live transcription */}
         <AnimatePresence>
           {activeSpeaker === "future" && displayedText && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={spring}
-              className="max-w-md"
+              exit={{ opacity: 0, y: -8 }}
+              className="max-w-md text-center"
             >
-              <p className="text-white/60 text-sm md:text-base leading-relaxed">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {displayedText}
                 {isTyping && (
-                  <span className="inline-block w-px h-4 bg-white ml-1 animate-pulse" />
+                  <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-foreground" />
                 )}
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* User speaking waveform */}
-        <WaveformBars isActive={activeSpeaker === "user"} />
+        {/* User speaking indicator */}
+        {activeSpeaker === "user" && (
+          <div className="mt-6 flex items-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{ height: [8, 24, 8] }}
+                transition={{
+                  duration: 0.6,
+                  repeat: Infinity,
+                  delay: i * 0.1,
+                }}
+                className="w-1 rounded-full bg-foreground/50"
+              />
+            ))}
+          </div>
+        )}
       </main>
 
-      {/* Transcript sidebar - desktop only */}
-      <TranscriptSidebar
-        transcript={transcript}
-        status={status}
-        transcriptEndRef={transcriptEndRef}
-      />
+      {/* Transcript sidebar */}
+      <aside className="hidden w-80 flex-col border-l border-border lg:flex">
+        <div className="flex h-14 items-center border-b border-border px-4">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Transcript
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {transcript.length === 0 ? (
+            <div className="flex flex-col gap-3 py-8">
+              {status === "connecting" ? (
+                <>
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  Waiting for conversation...
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {transcript.map((entry, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">
+                    {entry.speaker === "user" ? "You" : "Future You"}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-sm leading-relaxed",
+                      entry.speaker === "future" ? "text-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    {entry.text}
+                  </p>
+                </motion.div>
+              ))}
+              <div ref={transcriptEndRef} />
+            </div>
+          )}
+        </div>
+      </aside>
 
       {/* Controls */}
-      <ConversationControls
-        isMuted={isMuted}
-        onToggleMute={toggleMute}
-        onEndConversation={endConversation}
-      />
+      <footer className="flex items-center justify-center gap-4 border-t border-border py-6 lg:absolute lg:inset-x-0 lg:bottom-0 lg:border-0 lg:py-8">
+        <Button
+          onClick={toggleMute}
+          variant={isMuted ? "secondary" : "outline"}
+          size="icon-lg"
+          className="rounded-full"
+          aria-label={isMuted ? "Unmute" : "Mute"}
+        >
+          {isMuted ? <MicOff /> : <Mic />}
+        </Button>
+        
+        <Separator orientation="vertical" className="h-8" />
+
+        <Button
+          onClick={endConversation}
+          variant="destructive"
+          size="icon-lg"
+          className="size-14 rounded-full"
+          aria-label="End conversation"
+        >
+          <PhoneOff />
+        </Button>
+      </footer>
     </div>
-  );
-}
-
-// Transcript Sidebar Component
-interface TranscriptSidebarProps {
-  transcript: TranscriptEntry[];
-  status: ConnectionStatus;
-  transcriptEndRef: React.RefObject<HTMLDivElement | null>;
-}
-
-function TranscriptSidebar({
-  transcript,
-  status,
-  transcriptEndRef,
-}: TranscriptSidebarProps) {
-  return (
-    <aside className="fixed right-0 top-0 bottom-0 w-80 border-l border-white/10 bg-black hidden lg:flex flex-col">
-      <div className="shrink-0 px-6 py-4 border-b border-white/10">
-        <h3 className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">
-          Transcript
-        </h3>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {transcript.length === 0 && (
-          <p className="text-white/30 text-sm text-center py-8">
-            {status === "connecting"
-              ? "Connecting..."
-              : "Waiting for conversation..."}
-          </p>
-        )}
-        {transcript.map((entry, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.05 }}
-          >
-            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/30 mb-1">
-              {entry.speaker === "user" ? "You" : "Future You"}
-            </p>
-            <p
-              className={cn(
-                "text-sm leading-relaxed",
-                entry.speaker === "future" ? "text-white/70" : "text-white/40"
-              )}
-            >
-              {entry.text}
-            </p>
-          </motion.div>
-        ))}
-        <div ref={transcriptEndRef} />
-      </div>
-    </aside>
-  );
-}
-
-// Conversation Controls Component
-interface ConversationControlsProps {
-  isMuted: boolean;
-  onToggleMute: () => void;
-  onEndConversation: () => void;
-}
-
-function ConversationControls({
-  isMuted,
-  onToggleMute,
-  onEndConversation,
-}: ConversationControlsProps) {
-  return (
-    <motion.footer
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={spring}
-      className="shrink-0 py-8 flex items-center justify-center gap-6"
-    >
-      {/* Mute button */}
-      <Button
-        onClick={onToggleMute}
-        variant="ghost"
-        size="icon-lg"
-        className={cn(
-          "rounded-full",
-          isMuted
-            ? "bg-white/10 text-white/50"
-            : "bg-white/5 text-white/30 hover:bg-white/10 hover:text-white/50"
-        )}
-        aria-label={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-      </Button>
-
-      {/* End call button */}
-      <Button
-        onClick={onEndConversation}
-        size="icon-lg"
-        className="rounded-full size-16"
-        aria-label="End conversation"
-      >
-        <PhoneOff className="size-5" />
-      </Button>
-    </motion.footer>
   );
 }

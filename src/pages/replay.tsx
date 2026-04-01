@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Share2, Download, Play, Pause, ArrowRight } from "lucide-react";
+import { Share2, Download, Play, Pause, ArrowRight, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn, formatDuration } from "../lib/utils";
-import { Button } from "../../components/ui/button";
-import { PageLayout, PageHeader } from "../components/ui";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Separator } from "../components/ui/separator";
+import { Progress } from "../components/ui/progress";
+import { Skeleton } from "../components/ui/skeleton";
 
 interface ReplayData {
   sessionId: string;
@@ -17,8 +20,6 @@ interface ReplayData {
   endedAt: number;
   duration: number;
 }
-
-const spring = { type: "spring", stiffness: 100, damping: 20 };
 
 export function ReplayPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -63,241 +64,188 @@ export function ReplayPage() {
 
   if (loading) {
     return (
-      <PageLayout>
-        <div className="size-5 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
-      </PageLayout>
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="flex h-14 items-center justify-between border-b border-border px-6">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-20" />
+        </header>
+        <main className="flex flex-1 flex-col items-center px-6 py-12">
+          <div className="w-full max-w-lg">
+            <Skeleton className="mb-8 h-8 w-48 mx-auto" />
+            <Skeleton className="mb-4 h-4 w-32 mx-auto" />
+            <Skeleton className="mb-12 h-24 w-full rounded-xl" />
+            <Skeleton className="mb-4 h-4 w-20" />
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
+          </div>
+        </main>
+      </div>
     );
   }
 
   if (error || !data) {
     return (
-      <PageLayout className="text-center">
-        <PageHeader
-          title="Replay not found"
-          subtitle="This conversation may have expired."
-          className="mb-8"
-        />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight">
+          Replay not found
+        </h1>
+        <p className="mb-8 text-sm text-muted-foreground">
+          This conversation may have expired.
+        </p>
         <Link to="/">
-          <Button size="lg" className="rounded-full px-8">
-            <span>Start a new conversation</span>
-            <ArrowRight className="size-4" />
+          <Button className="gap-2">
+            Start a new conversation
+            <ArrowRight data-icon="inline-end" />
           </Button>
         </Link>
-      </PageLayout>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen flex flex-col bg-black">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <ReplayHeader onShare={handleShare} copied={copied} />
+      <header className="flex h-14 items-center justify-between border-b border-border px-6">
+        <Link
+          to="/setup"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="size-4" />
+          New conversation
+        </Link>
+        <Button onClick={handleShare} variant="outline" size="sm" className="gap-2">
+          <Share2 data-icon="inline-start" />
+          {copied ? "Copied" : "Share"}
+        </Button>
+      </header>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center px-6 py-12">
+      <main className="flex flex-1 flex-col items-center px-6 py-12">
         <div className="w-full max-w-lg">
           {/* Title */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.1 }}
-            className="text-center mb-12"
+            className="mb-12 text-center"
           >
-            <h1 className="font-serif text-4xl text-white mb-3">
+            <h1 className="mb-2 text-3xl font-semibold tracking-tight">
               Your Conversation
             </h1>
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50">
+            <p className="text-sm text-muted-foreground">
               {new Date(data.startedAt).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",
               })}{" "}
-              &middot; {formatDuration(data.duration)}
+              · {formatDuration(data.duration)}
             </p>
           </motion.div>
 
           {/* Audio player */}
-          <AudioPlayer
-            sessionId={sessionId ?? ""}
-            isPlaying={isPlaying}
-            onTogglePlay={() => setIsPlaying(!isPlaying)}
-            currentTime={currentTime}
-            duration={data.duration}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="mb-12">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    size="icon-lg"
+                    className="shrink-0 rounded-full"
+                  >
+                    {isPlaying ? <Pause /> : <Play className="ml-0.5" />}
+                  </Button>
+
+                  <div className="flex-1 min-w-0">
+                    <Progress
+                      value={data.duration ? (currentTime / data.duration) * 100 : 0}
+                      className="mb-2 h-1"
+                    />
+                    <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+                      <span>{formatDuration(currentTime)}</span>
+                      <span>{formatDuration(data.duration)}</span>
+                    </div>
+                  </div>
+
+                  <a href={`/api/audio/sessions/${sessionId}/full.mp3`} download>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <Download />
+                    </Button>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Transcript */}
-          <TranscriptList transcript={data.transcript} startedAt={data.startedAt} />
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Transcript
+            </h2>
+
+            <div className="flex flex-col gap-3">
+              {data.transcript.map((entry, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex gap-3",
+                    entry.speaker === "future" ? "flex-row-reverse" : ""
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium",
+                      entry.speaker === "future"
+                        ? "bg-foreground text-background"
+                        : "bg-secondary text-secondary-foreground"
+                    )}
+                  >
+                    {entry.speaker === "user" ? "Y" : "F"}
+                  </div>
+                  <div
+                    className={cn(
+                      "flex-1 rounded-xl px-4 py-3",
+                      entry.speaker === "future"
+                        ? "bg-secondary"
+                        : "border border-border"
+                    )}
+                  >
+                    <p className="text-sm leading-relaxed">{entry.text}</p>
+                    <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+                      {formatDuration(entry.timestamp - data.startedAt)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <Separator className="my-12" />
 
           {/* CTA */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ ...spring, delay: 0.4 }}
-            className="mt-16 text-center"
+            transition={{ delay: 0.3 }}
+            className="text-center"
           >
             <Link to="/setup">
-              <Button size="lg" className="rounded-full px-8">
-                <span>Have another conversation</span>
-                <ArrowRight className="size-4" />
+              <Button size="lg" className="gap-2">
+                Have another conversation
+                <ArrowRight data-icon="inline-end" />
               </Button>
             </Link>
           </motion.div>
         </div>
-      </div>
-    </main>
-  );
-}
-
-// Header Component
-function ReplayHeader({
-  onShare,
-  copied,
-}: {
-  onShare: () => void;
-  copied: boolean;
-}) {
-  return (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={spring}
-      className="shrink-0 h-14 flex items-center justify-between px-6 border-b border-white/10"
-    >
-      <Link to="/setup">
-        <Button variant="ghost" className="text-white/50 hover:text-white">
-          <span>New conversation</span>
-        </Button>
-      </Link>
-      <Button
-        onClick={onShare}
-        variant="ghost"
-        className="text-white/50 hover:text-white"
-      >
-        <Share2 className="size-4" />
-        <span>{copied ? "Copied" : "Share"}</span>
-      </Button>
-    </motion.header>
-  );
-}
-
-// Audio Player Component
-function AudioPlayer({
-  sessionId,
-  isPlaying,
-  onTogglePlay,
-  currentTime,
-  duration,
-}: {
-  sessionId: string;
-  isPlaying: boolean;
-  onTogglePlay: () => void;
-  currentTime: number;
-  duration: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ ...spring, delay: 0.2 }}
-      className="p-6 mb-12 rounded-2xl border border-white/10"
-    >
-      <div className="flex items-center gap-4">
-        <Button
-          onClick={onTogglePlay}
-          size="icon-lg"
-          className="rounded-full shrink-0"
-        >
-          {isPlaying ? (
-            <Pause className="size-5" />
-          ) : (
-            <Play className="size-5 ml-0.5" />
-          )}
-        </Button>
-
-        <div className="flex-1 min-w-0">
-          <div className="h-px bg-white/10 rounded-full overflow-hidden mb-2">
-            <div
-              className="h-full bg-white rounded-full transition-all"
-              style={{
-                width: `${duration ? (currentTime / duration) * 100 : 0}%`,
-              }}
-            />
-          </div>
-          <div className="flex justify-between font-mono text-[10px] tracking-[0.1em] text-white/30">
-            <span>{formatDuration(currentTime)}</span>
-            <span>{formatDuration(duration)}</span>
-          </div>
-        </div>
-
-        <a
-          href={`/api/audio/sessions/${sessionId}/full.mp3`}
-          download
-        >
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full border-white/10 text-white/50 hover:text-white hover:border-white/20 shrink-0"
-          >
-            <Download className="size-4" />
-          </Button>
-        </a>
-      </div>
-    </motion.div>
-  );
-}
-
-// Transcript List Component
-function TranscriptList({
-  transcript,
-  startedAt,
-}: {
-  transcript: ReplayData["transcript"];
-  startedAt: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ ...spring, delay: 0.3 }}
-    >
-      <h2 className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30 mb-6">
-        Transcript
-      </h2>
-
-      <div className="space-y-4">
-        {transcript.map((entry, i) => (
-          <div
-            key={i}
-            className={cn(
-              "flex gap-3",
-              entry.speaker === "future" ? "flex-row-reverse" : ""
-            )}
-          >
-            <div
-              className={cn(
-                "size-7 rounded-full flex items-center justify-center font-mono text-[9px] tracking-wider shrink-0 mt-1",
-                entry.speaker === "future"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white/50"
-              )}
-            >
-              {entry.speaker === "user" ? "Y" : "F"}
-            </div>
-            <div
-              className={cn(
-                "flex-1 px-4 py-3 rounded-xl",
-                entry.speaker === "future"
-                  ? "bg-white/5 text-white/80"
-                  : "border border-white/10 text-white/60"
-              )}
-            >
-              <p className="text-sm leading-relaxed">{entry.text}</p>
-              <p className="font-mono text-[9px] tracking-[0.1em] text-white/20 mt-2">
-                {formatDuration(entry.timestamp - startedAt)}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
+      </main>
+    </div>
   );
 }
