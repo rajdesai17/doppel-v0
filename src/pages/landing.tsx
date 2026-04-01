@@ -1,159 +1,140 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Mic, Clock, MessageSquare, ArrowRight } from "lucide-react";
+import { ArrowRight, Mic, Sparkles, Waves } from "lucide-react";
+import { PageFrame, SectionHeading, StatusPill, TopBar } from "../components/chrome";
+
+const STEPS = [
+  {
+    icon: <Mic className="size-4" />,
+    title: "Record your voice",
+    body: "A short, clean sample is enough.",
+  },
+  {
+    icon: <Sparkles className="size-4" />,
+    title: "Describe the moment",
+    body: "Give the system the decision you are facing.",
+  },
+  {
+    icon: <Waves className="size-4" />,
+    title: "Start the conversation",
+    body: "Speak with a future version of yourself in real time.",
+  },
+];
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black/80 backdrop-blur-xl">
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <Link
-          to="/setup"
-          className="flex items-center gap-1.5 text-[13px] font-medium text-[#a1a1a1] hover:text-white transition-colors duration-200"
-        >
-          Begin
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </nav>
+    <main className="min-h-screen">
+      <TopBar
+        left={<StatusPill label="voice prototype" tone="accent" />}
+        right={
+          <Link
+            to="/setup"
+            className="button-lift inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/85 hover:border-white/16 hover:bg-white/[0.08]"
+          >
+            Begin
+            <ArrowRight className="size-4" />
+          </Link>
+        }
+      />
 
-      {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center text-center pt-14 min-h-screen px-6">
-        {/* Subtle radial glow behind heading */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] pointer-events-none"
-          style={{
-            background: "radial-gradient(ellipse at center, rgba(124,58,237,0.06) 0%, transparent 70%)",
-          }}
-        />
+      <PageFrame className="pb-16 pt-10 sm:pt-16 lg:pb-20">
+        <section className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_420px] xl:items-center">
+          <div className="max-w-[760px]">
+            <SectionHeading
+              eyebrow="A quieter interface for a personal conversation"
+              title="Speak with the version of you that has already lived through this."
+              description="Doppel turns one short recording and one real dilemma into a focused voice conversation."
+            />
 
-        <div className="relative stagger">
-          {/* Eyebrow */}
-          <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-[#525252] mb-8">
-            A conversation across time
-          </p>
-
-          {/* Heading */}
-          <h1 className="font-display text-[clamp(52px,9vw,96px)] text-white leading-[0.92] max-w-[800px] mb-8 text-balance">
-            Meet Your
-            <br />
-            Future Self
-          </h1>
-
-          {/* Subtext */}
-          <p className="font-sans text-[16px] md:text-[17px] leading-[1.7] text-[#737373] max-w-[480px] mx-auto mb-14 text-pretty">
-            Clone your voice. Describe your crossroads. Have a real
-            conversation with who you could become — 10 years from now.
-          </p>
-
-          {/* CTA */}
-          <div>
-            <Link
-              to="/setup"
-              className="inline-flex items-center justify-center gap-2.5 font-sans text-[15px] font-medium bg-white text-black rounded-full px-8 py-3.5 hover:bg-[#e5e5e5] active:scale-[0.98] transition-all duration-150"
-            >
-              Start your conversation
-              <ArrowRight className="size-4" />
-            </Link>
-          </div>
-
-          {/* Waveform */}
-          <div className="mt-24">
-            <div
-              className="flex items-end justify-center gap-[3px] h-16"
-              style={{
-                maskImage:
-                  "linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%)",
-                WebkitMaskImage:
-                  "linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%)",
-              }}
-            >
-              {Array.from({ length: 48 }).map((_, i) => {
-                const center = 24;
-                const dist = Math.abs(i - center);
-                const bell = Math.exp(-Math.pow(dist / 10, 2));
-                const h = 6 + bell * 52;
-                const o = 0.08 + bell * 0.25;
-
-                return (
-                  <div
-                    key={i}
-                    className="w-[2px] rounded-full bg-white shrink-0"
-                    style={{
-                      height: `${h}px`,
-                      opacity: o,
-                      animation: `wave-bar 2s ease-in-out infinite`,
-                      animationDelay: `${i * 60}ms`,
-                      transformOrigin: "bottom",
-                    }}
-                  />
-                );
-              })}
+            <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-center">
+              <Link
+                to="/setup"
+                className="button-lift inline-flex items-center justify-center gap-2 rounded-full bg-[var(--app-accent)] px-6 py-3.5 text-sm font-semibold text-[#17130d] hover:bg-[var(--app-accent-strong)]"
+              >
+                Start your conversation
+                <ArrowRight className="size-4" />
+              </Link>
+              <p className="max-w-md text-sm leading-7 text-[var(--app-muted)]">
+                30 seconds to record. A few lines of context. Then the conversation begins.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Features */}
-      <section className="border-t border-[#1a1a1a]">
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#1a1a1a]">
-          <FeatureCard
-            icon={<Mic className="size-[18px]" />}
-            title="Clone Your Voice"
-            description="30 seconds of speech creates your unique voice profile for a seamless experience."
-            number="01"
-          />
-          <FeatureCard
-            icon={<Clock className="size-[18px]" />}
-            title="Future Persona"
-            description="AI generates a grounded persona from your context, informed by your situation."
-            number="02"
-          />
-          <FeatureCard
-            icon={<MessageSquare className="size-[18px]" />}
-            title="Real Conversation"
-            description="Speak naturally. Your future self responds in real-time, in your own voice."
-            number="03"
-          />
-        </div>
-      </section>
+          <div className="surface-card rounded-[2rem] p-6 sm:p-7">
+            <p className="eyebrow mb-4">Session preview</p>
+            <h2 className="text-[1.35rem] font-semibold tracking-[-0.04em] text-white">
+              One clear path in
+            </h2>
 
-      {/* Footer */}
-      <footer className="h-12 flex items-center justify-center border-t border-[#1a1a1a]">
-        <p className="font-mono text-[11px] tracking-[0.08em] text-[#333]">
-          Built with Cloudflare Agents + ElevenLabs
-        </p>
-      </footer>
+            <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm text-white/88">Voice sample</span>
+                <span className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
+                  step 1
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                {Array.from({ length: 22 }).map((_, index) => (
+                  <span
+                    key={index}
+                    className="audio-wave-bar block w-1 rounded-full bg-[rgba(217,195,154,0.85)]"
+                    style={{
+                      height: `${24 + Math.abs(10 - index) * 2.5}px`,
+                      animationDelay: `${index * 80}ms`,
+                      opacity: 0.48,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
+              <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
+                Future response
+              </p>
+              <p className="mt-3 text-sm leading-7 text-white/88">
+                Calm, direct, and grounded in the context you actually shared.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-14 rounded-[2rem] border border-white/8 bg-black/10 p-5 sm:p-7">
+          <div className="mb-6 max-w-lg">
+            <p className="eyebrow mb-4">How it works</p>
+            <h2 className="font-display text-[clamp(2rem,4vw,3.2rem)] text-white">
+              Minimal flow, readable surfaces.
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {STEPS.map((step) => (
+              <StepCard key={step.title} {...step} />
+            ))}
+          </div>
+        </section>
+      </PageFrame>
     </main>
   );
 }
 
-function FeatureCard({
+function StepCard({
   icon,
   title,
-  description,
-  number,
+  body,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
-  description: string;
-  number: string;
+  body: string;
 }) {
   return (
-    <div className="group px-8 md:px-10 py-10 md:py-12 hover:bg-[#0a0a0a] transition-colors duration-300">
-      <div className="flex items-center justify-between mb-6">
-        <div className="size-10 rounded-xl bg-[#111] border border-[#1a1a1a] flex items-center justify-center text-[#525252] group-hover:text-[#7C3AED] group-hover:border-[#7C3AED]/20 transition-colors duration-300">
-          {icon}
-        </div>
-        <span className="font-mono text-[11px] text-[#333]">{number}</span>
+    <article className="surface-soft rounded-[1.5rem] p-5 sm:p-6">
+      <div className="mb-4 flex size-10 items-center justify-center rounded-2xl bg-white/[0.05] text-[var(--app-accent-strong)]">
+        {icon}
       </div>
-      <h3 className="font-sans text-[15px] font-semibold text-white mb-2">
-        {title}
-      </h3>
-      <p className="font-sans text-[13px] leading-[1.7] text-[#666] max-w-[280px]">
-        {description}
-      </p>
-    </div>
+      <h3 className="text-[1.02rem] font-semibold tracking-[-0.03em] text-white">{title}</h3>
+      <p className="mt-3 text-sm leading-7 text-[var(--app-muted)]">{body}</p>
+    </article>
   );
 }

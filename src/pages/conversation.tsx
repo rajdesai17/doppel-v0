@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { PhoneOff, Mic, MicOff } from "lucide-react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Mic, MicOff, PhoneOff, Waves } from "lucide-react";
 import { Conversation } from "@elevenlabs/client";
+import { PageFrame, StatusPill, TopBar } from "../components/chrome";
 import { cn } from "../lib/utils";
 
 interface TranscriptEntry {
@@ -26,25 +28,23 @@ export function ConversationPage() {
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
 
-  // Timer
   useEffect(() => {
-    if (status === "connected") {
-      const start = Date.now();
-      timerRef.current = window.setInterval(() => {
-        setElapsed(Math.floor((Date.now() - start) / 1000));
-      }, 1000);
-    }
+    if (status !== "connected") return;
+
+    const startedAt = Date.now();
+    timerRef.current = window.setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [status]);
 
-  // Scroll transcript
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcript]);
 
-  // Connect to ElevenLabs
   useEffect(() => {
     if (!sessionId) return;
 
@@ -60,7 +60,7 @@ export function ConversationPage() {
 
         const { userId, persona, voiceId } = JSON.parse(sessionData);
 
-        const signedUrlRes = await fetch(
+        const signedUrlResponse = await fetch(
           `/agents/present-self-agent/${userId}?method=getSignedUrl`,
           {
             method: "POST",
@@ -69,17 +69,17 @@ export function ConversationPage() {
           }
         );
 
-        if (!signedUrlRes.ok) {
-          throw new Error("Failed to get signed URL");
+        if (!signedUrlResponse.ok) {
+          throw new Error("Signed URL request failed.");
         }
 
-        const { signedUrl } = (await signedUrlRes.json()) as { signedUrl: string };
+        const { signedUrl } = (await signedUrlResponse.json()) as { signedUrl: string };
 
         if (cancelled) return;
 
         try {
           const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          micStream.getTracks().forEach((t) => t.stop());
+          micStream.getTracks().forEach((track) => track.stop());
         } catch {
           setStatus("error");
           return;
@@ -92,19 +92,13 @@ export function ConversationPage() {
               prompt: { prompt: persona?.systemPrompt },
               firstMessage: persona?.openingLine,
             },
-            tts: {
-              voiceId: voiceId,
-            },
+            tts: { voiceId },
           },
-          onConnect: () => {
-            setStatus("connected");
-          },
-          onDisconnect: () => {
-            setStatus("disconnected");
-          },
+          onConnect: () => setStatus("connected"),
+          onDisconnect: () => setStatus("disconnected"),
           onMessage: (message) => {
-            setTranscript((prev) => [
-              ...prev,
+            setTranscript((current) => [
+              ...current,
               {
                 speaker: message.role === "agent" ? "future" : "user",
                 text: message.message,
@@ -112,17 +106,19 @@ export function ConversationPage() {
               },
             ]);
           },
-          onError: () => {
-            setStatus("error");
-          },
+          onError: () => setStatus("error"),
           onModeChange: (mode) => {
             if (mode.mode === "speaking") {
               setActiveSpeaker("future");
-            } else if (mode.mode === "listening") {
-              setActiveSpeaker("user");
-            } else {
-              setActiveSpeaker(null);
+              return;
             }
+
+            if (mode.mode === "listening") {
+              setActiveSpeaker("user");
+              return;
+            }
+
+            setActiveSpeaker(null);
           },
         });
 
@@ -153,214 +149,235 @@ export function ConversationPage() {
       await conversationRef.current.endSession();
       conversationRef.current = null;
     }
+
     setStatus("disconnected");
     navigate(`/replay/${sessionId}`);
-  }, [sessionId, navigate]);
+  }, [navigate, sessionId]);
 
   const toggleMute = useCallback(() => {
-    setIsMuted((prev) => {
-      const newMuted = !prev;
-      if (conversationRef.current) {
-        conversationRef.current.setMicMuted(newMuted);
-      }
-      return newMuted;
+    setIsMuted((current) => {
+      const nextValue = !current;
+      conversationRef.current?.setMicMuted(nextValue);
+      return nextValue;
     });
   }, []);
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const wholeSeconds = seconds % 60;
+    return `${minutes}:${wholeSeconds.toString().padStart(2, "0")}`;
   };
 
+  const statusTone =
+    status === "connected"
+      ? "live"
+      : status === "connecting"
+        ? "warning"
+        : status === "error"
+          ? "danger"
+          : "neutral";
+
   return (
-    <div className="min-h-screen h-screen flex flex-col bg-black">
-      {/* Header */}
-      <header className="shrink-0 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black">
-        <Link
-          to="/"
-          className="font-sans text-[13px] text-[#525252] hover:text-white px-3.5 py-1.5 rounded-full border border-[#1a1a1a] hover:border-[#333] transition-all duration-150"
-        >
-          Exit
-        </Link>
-
-        {/* Status + timer */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                "size-[6px] rounded-full",
-                status === "connected" && "bg-emerald-500",
-                status === "connecting" && "bg-amber-400 animate-pulse",
-                (status === "disconnected" || status === "error") && "bg-red-500"
-              )}
-            />
-            <span className="font-sans text-[12px] text-[#525252] capitalize">{status}</span>
+    <main className="min-h-screen">
+      <TopBar
+        left={
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 hover:border-white/16 hover:bg-white/[0.08]"
+          >
+            Exit
+          </Link>
+        }
+        right={
+          <div className="flex items-center gap-3">
+            <StatusPill label={status} tone={statusTone} />
+            <span className="text-timer text-sm text-[var(--app-muted)]">{formatTime(elapsed)}</span>
           </div>
-          {status === "connected" && (
-            <span className="font-mono text-[12px] text-[#404040] tabular-nums">
-              {formatTime(elapsed)}
-            </span>
-          )}
-        </div>
+        }
+      />
 
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-      </header>
-
-      {/* Main conversation view */}
-      <main className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Split screen avatars */}
-        <div className="flex-1 grid grid-cols-2 min-h-[260px] lg:min-h-0">
-          {/* Present self */}
-          <div className="flex flex-col items-center justify-center p-6 relative">
-            <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#404040] mb-8">
-              You — Now
-            </p>
-            <div className="relative">
-              {/* Speaking ring */}
-              {activeSpeaker === "user" && (
-                <div className="absolute -inset-4 rounded-full border border-white/10 animate-breathe" />
-              )}
-              <div
-                className={cn(
-                  "size-28 lg:size-36 rounded-full flex items-center justify-center transition-all duration-300",
-                  activeSpeaker === "user"
-                    ? "bg-white/[0.06]"
-                    : "bg-[#0a0a0a]"
-                )}
-              >
-                <div
-                  className={cn(
-                    "size-16 lg:size-20 rounded-full flex items-center justify-center transition-all duration-300",
-                    activeSpeaker === "user"
-                      ? "bg-[#1a1a1a]"
-                      : "bg-[#111]"
-                  )}
-                >
-                  {isMuted ? (
-                    <MicOff className="size-6 lg:size-7 text-[#404040]" />
-                  ) : (
-                    <Mic
-                      className={cn(
-                        "size-6 lg:size-7 transition-colors duration-300",
-                        activeSpeaker === "user" ? "text-white" : "text-[#525252]"
-                      )}
-                    />
-                  )}
-                </div>
+      <PageFrame className="pb-6 pt-5 sm:pt-6">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <section className="surface-card rounded-[2rem] p-5 sm:p-7">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/8 pb-6">
+              <div>
+                <p className="eyebrow mb-3">Conversation</p>
+                <h1 className="text-[1.2rem] font-semibold tracking-[-0.04em] text-white">
+                  Now speaking with you, 10 years later
+                </h1>
               </div>
-            </div>
-          </div>
-
-          {/* Future self */}
-          <div className="flex flex-col items-center justify-center p-6 border-l border-[#1a1a1a] relative">
-            <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-[#404040] mb-8">
-              You — 2035
-            </p>
-            <div className="relative">
-              {/* Speaking ring */}
-              {activeSpeaker === "future" && (
-                <div className="absolute -inset-4 rounded-full border border-[#7C3AED]/30 shadow-[0_0_30px_rgba(124,58,237,0.15)]" style={{ animation: "breathe 2s ease-in-out infinite" }} />
-              )}
-              <div
-                className={cn(
-                  "size-28 lg:size-36 rounded-full flex items-center justify-center transition-all duration-300",
+              <StatusPill
+                label={
                   activeSpeaker === "future"
-                    ? "bg-[#7C3AED]/10"
-                    : "bg-[#0a0a0a]"
-                )}
-              >
-                <div
+                    ? "future speaking"
+                    : activeSpeaker === "user"
+                      ? "listening"
+                      : "waiting"
+                }
+                tone={activeSpeaker ? "accent" : "neutral"}
+              />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SpeakerCard
+                title="You now"
+                subtitle={isMuted ? "Muted" : "Present voice"}
+                active={activeSpeaker === "user"}
+                icon={isMuted ? <MicOff className="size-7" /> : <Mic className="size-7" />}
+                note={
+                  isMuted
+                    ? "Your turns are paused until you unmute."
+                    : activeSpeaker === "user"
+                      ? "The system is listening to you."
+                      : "Waiting for your next turn."
+                }
+              />
+              <SpeakerCard
+                title="You later"
+                subtitle="Future perspective"
+                active={activeSpeaker === "future"}
+                accent
+                icon={<Waves className="size-7" />}
+                note={
+                  activeSpeaker === "future"
+                    ? "This side currently has the floor."
+                    : "Waiting for the next response."
+                }
+              />
+            </div>
+
+            <div className="mt-5 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <p className="text-sm text-[var(--app-muted)]">
+                  Keep the stage clear. Controls stay here, transcript stays separate.
+                </p>
+                <span className="text-timer text-sm text-[var(--app-muted)]">{formatTime(elapsed)}</span>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={toggleMute}
                   className={cn(
-                    "size-16 lg:size-20 rounded-full flex items-center justify-center border transition-all duration-300",
-                    activeSpeaker === "future"
-                      ? "bg-[#7C3AED]/15 border-[#7C3AED]/30"
-                      : "bg-[#111] border-[#1a1a1a]"
+                    "button-lift flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[1rem] px-5 py-3 text-sm font-medium",
+                    isMuted
+                      ? "border border-rose-300/18 bg-rose-300/10 text-rose-100 hover:bg-rose-300/16"
+                      : "border border-white/10 bg-white/[0.04] text-white/84 hover:border-white/16 hover:bg-white/[0.08]"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "size-3 rounded-full transition-all duration-300",
-                      activeSpeaker === "future"
-                        ? "bg-[#7C3AED] scale-125 shadow-[0_0_12px_rgba(124,58,237,0.6)]"
-                        : "bg-[#333]"
-                    )}
-                  />
-                </div>
+                  {isMuted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                  {isMuted ? "Unmute microphone" : "Mute microphone"}
+                </button>
+                <button
+                  onClick={endConversation}
+                  className="button-lift flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[1rem] bg-rose-300 px-5 py-3 text-sm font-semibold text-[#250d13] hover:bg-rose-200"
+                >
+                  <PhoneOff className="size-4" />
+                  End conversation
+                </button>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Transcript sidebar */}
-        <aside className="w-full lg:w-[380px] border-t lg:border-t-0 lg:border-l border-[#1a1a1a] flex flex-col bg-[#050505]">
-          <div className="shrink-0 px-5 py-3.5 border-b border-[#1a1a1a] flex items-center justify-between">
-            <h3 className="font-sans text-[13px] font-medium text-[#525252]">Transcript</h3>
-            <span className="font-mono text-[11px] text-[#333]">
-              {transcript.length} {transcript.length === 1 ? "message" : "messages"}
-            </span>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-48 lg:max-h-none">
-            {transcript.length === 0 && (
-              <p className="font-sans text-[13px] text-[#333] text-center py-10">
-                {status === "connecting"
-                  ? "Connecting..."
-                  : status === "error"
-                    ? "Connection failed. Please go back and try again."
-                    : "Waiting for conversation to begin..."}
-              </p>
-            )}
-            {transcript.map((entry, i) => (
-              <div key={i} className="animate-fade-in">
-                <p className="font-mono text-[10px] tracking-[0.08em] text-[#333] mb-1.5 uppercase">
-                  {entry.speaker === "user" ? "You (Now)" : "You (2035)"}
-                </p>
-                <div
-                  className={cn(
-                    "px-3.5 py-2.5 rounded-xl font-sans text-[14px] leading-relaxed",
-                    entry.speaker === "future"
-                      ? "bg-[#7C3AED]/8 border-l-2 border-[#7C3AED]/40 text-[#e5e5e5]"
-                      : "bg-[#0a0a0a] border border-[#1a1a1a] text-[#a1a1a1]"
-                  )}
-                >
-                  {entry.text}
-                </div>
+          <aside className="surface-card flex min-h-[640px] flex-col overflow-hidden rounded-[2rem]">
+            <div className="border-b border-white/8 px-5 py-5 sm:px-6">
+              <p className="eyebrow mb-3">Transcript</p>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-[1.05rem] font-semibold tracking-[-0.03em] text-white">
+                  Captured in real time
+                </h2>
+                <span className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
+                  {transcript.length}
+                </span>
               </div>
-            ))}
-            <div ref={transcriptEndRef} />
-          </div>
-        </aside>
-      </main>
+            </div>
 
-      {/* Controls */}
-      <footer className="shrink-0 border-t border-[#1a1a1a] px-6 py-4 bg-black">
-        <div className="flex items-center justify-center gap-4">
-          {/* Mute toggle */}
-          <button
-            onClick={toggleMute}
-            className={cn(
-              "size-12 rounded-full flex items-center justify-center transition-all duration-150",
-              isMuted
-                ? "bg-red-500/10 text-red-400 hover:bg-red-500/15"
-                : "bg-[#111] text-[#a1a1a1] hover:text-white hover:bg-[#1a1a1a]"
-            )}
-            aria-label={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-          </button>
-
-          {/* End call */}
-          <button
-            onClick={endConversation}
-            className="size-14 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 active:scale-95 transition-all duration-150"
-            aria-label="End conversation"
-          >
-            <PhoneOff className="size-5" />
-          </button>
+            <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              {transcript.length === 0 ? (
+                <div className="surface-soft flex h-full min-h-[260px] items-center justify-center rounded-[1.45rem] px-6 text-center">
+                  <p className="max-w-xs text-sm leading-7 text-[var(--app-muted)]">
+                    {status === "connecting"
+                      ? "Connecting to the live session."
+                      : status === "error"
+                        ? "Connection failed. Go back and try again."
+                        : "Waiting for the conversation to begin."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transcript.map((entry, index) => (
+                    <article
+                      key={index}
+                      className={cn(
+                        "rounded-[1.45rem] border px-4 py-4 sm:px-5",
+                        entry.speaker === "future"
+                          ? "border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.08)]"
+                          : "border-white/8 bg-white/[0.05]"
+                      )}
+                    >
+                      <p className="mb-3 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
+                        {entry.speaker === "user" ? "You now" : "You later"}
+                      </p>
+                      <p className="text-[0.98rem] leading-8 text-white/90">{entry.text}</p>
+                    </article>
+                  ))}
+                  <div ref={transcriptEndRef} />
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
-      </footer>
-    </div>
+      </PageFrame>
+    </main>
+  );
+}
+
+function SpeakerCard({
+  title,
+  subtitle,
+  active,
+  icon,
+  note,
+  accent = false,
+}: {
+  title: string;
+  subtitle: string;
+  active: boolean;
+  icon: ReactNode;
+  note: string;
+  accent?: boolean;
+}) {
+  return (
+    <article
+      className={cn(
+        "rounded-[1.7rem] border p-6 sm:p-7",
+        active
+          ? accent
+            ? "border-[rgba(217,195,154,0.2)] bg-[rgba(217,195,154,0.08)]"
+            : "border-white/14 bg-white/[0.06]"
+          : "border-white/8 bg-white/[0.03]"
+      )}
+    >
+      <p className="eyebrow mb-3">{subtitle}</p>
+      <h3 className="text-[1.18rem] font-semibold tracking-[-0.04em] text-white">{title}</h3>
+
+      <div className="flex min-h-[220px] items-center justify-center">
+        <div
+          className={cn(
+            "flex size-28 items-center justify-center rounded-full border sm:size-32",
+            active
+              ? accent
+                ? "border-[rgba(217,195,154,0.22)] bg-[rgba(217,195,154,0.10)] text-[var(--app-accent-strong)]"
+                : "border-white/14 bg-white/[0.08] text-white"
+              : "border-white/8 bg-white/[0.04] text-white/70"
+          )}
+        >
+          <div className="flex size-16 items-center justify-center rounded-full bg-black/12 sm:size-[4.5rem]">
+            {icon}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-sm leading-7 text-[var(--app-muted)]">{note}</p>
+    </article>
   );
 }

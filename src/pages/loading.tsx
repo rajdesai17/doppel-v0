@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PageFrame, TopBar } from "../components/chrome";
 
 const LOADING_MESSAGES = [
   "Analyzing voice patterns",
@@ -17,26 +19,26 @@ export function LoadingPage() {
 
   useEffect(() => {
     const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      setMessageIndex((current) => (current + 1) % LOADING_MESSAGES.length);
     }, 2500);
 
     const progressInterval = setInterval(() => {
-      setProgress((prev) => Math.min(prev + 2, 95));
+      setProgress((current) => Math.min(current + 2, 95));
     }, 200);
 
     const checkReady = setInterval(async () => {
       try {
         const response = await fetch(`/api/session/${sessionId}/status`);
-        if (response.ok) {
-          const { status } = (await response.json()) as { status: string };
-          if (status === "ready") {
-            clearInterval(checkReady);
-            setProgress(100);
-            setTimeout(() => navigate(`/conversation/${sessionId}`), 500);
-          }
+        if (!response.ok) return;
+
+        const { status } = (await response.json()) as { status: string };
+        if (status === "ready") {
+          clearInterval(checkReady);
+          setProgress(100);
+          setTimeout(() => navigate(`/conversation/${sessionId}`), 500);
         }
       } catch {
-        // Will redirect from setup
+        // Setup page already handles the main session flow.
       }
     }, 2000);
 
@@ -48,60 +50,57 @@ export function LoadingPage() {
       clearInterval(checkReady);
       clearTimeout(timeout);
     };
-  }, [sessionId, navigate]);
+  }, [navigate, sessionId]);
 
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a]">
-        <Link
-          to="/setup"
-          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
-        >
-          &larr; Back
-        </Link>
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <div className="w-12" />
-      </nav>
+    <main className="min-h-screen">
+      <TopBar
+        left={
+          <Link
+            to="/setup"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 hover:border-white/16 hover:bg-white/[0.08]"
+          >
+            <ArrowLeft className="size-4" />
+            Back
+          </Link>
+        }
+      />
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="max-w-sm w-full text-center stagger">
-          {/* Processing orb */}
-          <div className="relative size-32 mx-auto mb-12">
-            <div className="absolute inset-0 rounded-full bg-[#7C3AED]/10 animate-breathe" />
-            <div className="absolute inset-4 rounded-full bg-[#7C3AED]/15 animate-breathe" style={{ animationDelay: "300ms" }} />
-            <div className="absolute inset-8 rounded-full bg-[#7C3AED]/25 animate-breathe" style={{ animationDelay: "600ms" }} />
-            <div className="absolute inset-[44px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_40px_rgba(124,58,237,0.4)]" />
+      <PageFrame className="flex min-h-[calc(100vh-72px)] items-center py-10">
+        <section className="surface-card mx-auto w-full max-w-[760px] rounded-[2rem] px-6 py-10 text-center sm:px-10 sm:py-14">
+          <div className="relative mx-auto mb-10 flex size-36 items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(217,195,154,0.18),transparent_70%)] blur-3xl" />
+            <div className="absolute inset-4 rounded-full border border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.08)] animate-breathe" />
+            <div
+              className="absolute inset-8 rounded-full border border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.06)] animate-breathe"
+              style={{ animationDelay: "240ms" }}
+            />
+            <div className="relative flex size-[4.5rem] items-center justify-center rounded-full bg-[var(--app-accent)] text-[#17130d] shadow-[0_16px_40px_rgba(217,195,154,0.22)]">
+              <Loader2 className="size-6 animate-spin" />
+            </div>
           </div>
 
-          {/* Status */}
-          <div>
-            <h2 className="font-display text-[36px] text-white mb-3 leading-tight">
-              Creating your future self
-            </h2>
-          </div>
+          <p className="eyebrow mb-4">Processing</p>
+          <h1 className="font-display text-[clamp(2.4rem,5vw,4.2rem)] text-white">
+            Creating your future self.
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[0.98rem] leading-8 text-[var(--app-muted)]">
+            {LOADING_MESSAGES[messageIndex]}...
+          </p>
 
-          <div>
-            <p className="font-sans text-[15px] text-[#666] mb-10 h-6">
-              {LOADING_MESSAGES[messageIndex]}...
-            </p>
-          </div>
-
-          {/* Progress */}
-          <div>
-            <div className="w-full h-[2px] bg-[#1a1a1a] rounded-full overflow-hidden mb-3">
+          <div className="mx-auto mt-10 max-w-[440px]">
+            <div className="h-2 overflow-hidden rounded-full bg-white/[0.05]">
               <div
-                className="h-full bg-[#7C3AED] rounded-full transition-all duration-300 ease-out"
+                className="h-full rounded-full bg-[var(--app-accent)] transition-all duration-300 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="font-mono text-[11px] tracking-[0.1em] text-[#404040]">{progress}%</p>
+            <p className="mt-4 font-mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--app-soft)]">
+              {progress}% complete
+            </p>
           </div>
-        </div>
-      </div>
+        </section>
+      </PageFrame>
     </main>
   );
 }

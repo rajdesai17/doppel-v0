@@ -1,16 +1,13 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Loader2, LockKeyhole } from "lucide-react";
 import { VoiceRecorder } from "../components/voice-recorder";
-import { getUserId, blobToBase64 } from "../lib/utils";
+import { PageFrame, SectionHeading, StatusPill, TopBar } from "../components/chrome";
+import { blobToBase64, getUserId } from "../lib/utils";
 
 type Step = "voice" | "situation" | "processing";
 
-const STEPS = [
-  { id: "voice", label: "Voice" },
-  { id: "situation", label: "Context" },
-  { id: "processing", label: "Create" },
-] as const;
+const STEP_LABELS = ["Voice", "Context", "Create"];
 
 export function SetupPage() {
   const navigate = useNavigate();
@@ -21,6 +18,8 @@ export function SetupPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState("Analyzing your voice...");
+
+  const currentStepIndex = step === "voice" ? 0 : step === "situation" ? 1 : 2;
 
   const handleVoiceRecorded = (blob: Blob) => {
     setAudioBlob(blob);
@@ -37,12 +36,13 @@ export function SetupPage() {
     const messages = [
       "Analyzing your voice...",
       "Creating voice clone...",
-      "Generating future persona...",
+      "Building your future persona...",
     ];
-    let msgIndex = 0;
-    const msgInterval = setInterval(() => {
-      msgIndex = (msgIndex + 1) % messages.length;
-      setProcessingMessage(messages[msgIndex]);
+
+    let messageIndex = 0;
+    const interval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % messages.length;
+      setProcessingMessage(messages[messageIndex]);
     }, 2000);
 
     try {
@@ -59,7 +59,7 @@ export function SetupPage() {
       );
 
       if (!cloneResponse.ok) {
-        throw new Error("Failed to clone voice");
+        throw new Error("Voice cloning failed. Try a clearer recording.");
       }
 
       const sessionResponse = await fetch(
@@ -76,7 +76,7 @@ export function SetupPage() {
       );
 
       if (!sessionResponse.ok) {
-        throw new Error("Failed to create session");
+        throw new Error("Session creation failed. Please try again.");
       }
 
       const { sessionId, persona, agentId, voiceId } = (await sessionResponse.json()) as {
@@ -91,157 +91,140 @@ export function SetupPage() {
         JSON.stringify({ persona, agentId, voiceId, userId })
       );
 
-      clearInterval(msgInterval);
+      clearInterval(interval);
       navigate(`/conversation/${sessionId}`);
-    } catch (e) {
-      clearInterval(msgInterval);
-      setError((e as Error).message);
+    } catch (caughtError) {
+      clearInterval(interval);
+      setError((caughtError as Error).message);
       setStep("situation");
       setIsProcessing(false);
     }
   };
 
-  const currentStepIndex = step === "voice" ? 0 : step === "situation" ? 1 : 2;
-
   return (
-    <main className="min-h-screen flex flex-col bg-black">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 md:px-10 border-b border-[#1a1a1a] bg-black/80 backdrop-blur-xl">
-        <Link
-          to="/"
-          className="font-sans text-[13px] text-[#525252] hover:text-white transition-colors duration-200"
-        >
-          &larr; Back
-        </Link>
-        <span className="font-sans text-[13px] font-semibold tracking-[0.15em] text-white/90 uppercase">
-          Doppel
-        </span>
-        <div className="w-12" />
-      </nav>
+    <main className="min-h-screen">
+      <TopBar
+        left={
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 hover:border-white/16 hover:bg-white/[0.08]"
+          >
+            <ArrowLeft className="size-4" />
+            Back
+          </Link>
+        }
+        right={<StatusPill label={`step ${currentStepIndex + 1} of 3`} tone="neutral" />}
+      />
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center pt-[112px] px-6 pb-16">
-        {/* Stepper */}
-        <div className="flex items-center gap-0 mb-16">
-          {STEPS.map((s, index) => (
-            <div key={s.id} className="flex items-center">
-              {/* Step node */}
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className={`size-8 rounded-full flex items-center justify-center text-[12px] font-medium transition-all duration-300 ${
-                    currentStepIndex === index
-                      ? "bg-white text-black"
-                      : currentStepIndex > index
-                        ? "bg-white/10 text-white"
-                        : "bg-[#111] text-[#525252] border border-[#262626]"
-                  }`}
-                >
-                  {currentStepIndex > index ? <Check className="size-3.5" /> : index + 1}
-                </div>
-                <span
-                  className={`font-sans text-[11px] tracking-[0.05em] uppercase transition-colors duration-300 ${
-                    currentStepIndex === index
-                      ? "text-white"
-                      : currentStepIndex > index
-                        ? "text-[#666]"
-                        : "text-[#404040]"
-                  }`}
-                >
-                  {s.label}
-                </span>
-              </div>
-
-              {/* Connector */}
-              {index < STEPS.length - 1 && (
-                <div className="relative w-16 md:w-20 mx-3 mt-[-18px]">
-                  <div className="h-px bg-[#1a1a1a]" />
-                  <div
-                    className="absolute top-0 left-0 h-px bg-white/20 transition-all duration-500"
-                    style={{ width: currentStepIndex > index ? "100%" : "0%" }}
-                  />
-                </div>
-              )}
+      <PageFrame className="pb-16 pt-8 sm:pt-10">
+        <section className="surface-card mx-auto max-w-[1160px] rounded-[2rem] p-6 sm:p-8 lg:p-10">
+          <div className="mb-8 flex flex-col gap-6 border-b border-white/8 pb-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-xl">
+              <p className="eyebrow mb-4">Session setup</p>
+              <h1 className="font-display text-[clamp(2.2rem,4.5vw,4rem)] text-white">
+                A simpler setup flow.
+              </h1>
+              <p className="mt-4 text-[0.98rem] leading-8 text-[var(--app-muted)]">
+                One action at a time, fewer panels, and enough space to read comfortably.
+              </p>
             </div>
-          ))}
-        </div>
 
-        {/* Step content */}
-        <div className="w-full max-w-[420px]">
-          {/* Step 1: Voice */}
-          {step === "voice" && (
-            <div className="animate-fade-up">
-              <div className="text-center mb-12">
-                <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1]">
-                  Record your voice
-                </h1>
-                <p className="font-sans text-[15px] text-[#666] leading-relaxed">
-                  Speak naturally for 30 seconds to create your voice clone.
-                </p>
+            <div className="flex flex-wrap gap-3">
+              {STEP_LABELS.map((label, index) => (
+                <div
+                  key={label}
+                  className={[
+                    "rounded-full border px-4 py-2 text-sm",
+                    index === currentStepIndex
+                      ? "border-[rgba(217,195,154,0.22)] bg-[rgba(217,195,154,0.12)] text-[var(--app-accent-strong)]"
+                      : "border-white/8 bg-white/[0.03] text-white/60",
+                  ].join(" ")}
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {step === "voice" ? (
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+              <div className="max-w-[420px]">
+                <SectionHeading
+                  eyebrow="Voice capture"
+                  title="Record one clear sample."
+                  description="Speak naturally for 30 seconds. You can listen back before continuing."
+                />
+
+                <div className="mt-8 rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5">
+                  <div className="mb-3 flex items-center gap-2 text-[var(--app-accent-strong)]">
+                    <LockKeyhole className="size-4" />
+                    <span className="text-sm font-medium">Private by default</span>
+                  </div>
+                  <p className="text-sm leading-7 text-[var(--app-muted)]">
+                    Your recording is only used to create the voice and session for this flow.
+                  </p>
+                </div>
               </div>
 
               <VoiceRecorder onRecordingComplete={handleVoiceRecorded} duration={30} />
-
-              <p className="font-sans text-[12px] text-[#404040] text-center mt-10 leading-relaxed">
-                Tip: Read something aloud, recite a quote, or talk about your day.
-              </p>
             </div>
-          )}
+          ) : null}
 
-          {/* Step 2: Situation */}
-          {step === "situation" && (
-            <div className="animate-fade-up">
-              <div className="text-center mb-12">
-                <h1 className="font-display text-[40px] text-white mb-3 leading-[1.1]">
-                  {"What's on your mind?"}
-                </h1>
-                <p className="font-sans text-[15px] text-[#666] leading-relaxed">
-                  {"Describe a decision or crossroads you're facing."}
+          {step === "situation" ? (
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] lg:items-start">
+              <div className="max-w-[420px]">
+                <SectionHeading
+                  eyebrow="Context"
+                  title="What are you trying to decide?"
+                  description="Write the decision, the tension, and what feels uncertain."
+                />
+
+                <p className="mt-6 text-sm leading-7 text-[var(--app-muted)]">
+                  Short, specific context works better than long exposition.
                 </p>
               </div>
 
-              {error && (
-                <div className="flex items-start gap-3 p-4 mb-8 rounded-xl bg-red-500/5 border border-red-500/10">
-                  <p className="font-sans text-[13px] text-red-400 leading-relaxed">{error}</p>
-                </div>
-              )}
+              <div className="space-y-5">
+                {error ? (
+                  <div className="rounded-[1.4rem] border border-rose-300/16 bg-rose-300/8 px-4 py-4">
+                    <p className="text-sm leading-7 text-rose-100">{error}</p>
+                  </div>
+                ) : null}
 
-              <div className="flex flex-col gap-5">
-                <div>
-                  <label className="block font-sans text-[13px] text-[#737373] mb-2 font-medium">
-                    Your age
-                  </label>
+                <label className="block">
+                  <span className="mb-3 block text-sm font-medium text-white/90">Your age</span>
                   <input
                     type="number"
                     value={age}
-                    onChange={(e) => setAge(parseInt(e.target.value) || 25)}
+                    onChange={(event) => setAge(parseInt(event.target.value, 10) || 25)}
                     min={18}
                     max={80}
-                    className="w-full h-11 px-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl font-sans text-[15px] text-white focus:outline-none focus:border-[#404040] focus:ring-1 focus:ring-[#404040] transition-all duration-150"
+                    className="min-h-[3.25rem] w-full rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 text-base text-white outline-none focus:border-[rgba(217,195,154,0.28)] focus:bg-white/[0.06]"
                   />
-                </div>
+                </label>
 
-                <div>
-                  <label className="block font-sans text-[13px] text-[#737373] mb-2 font-medium">
+                <label className="block">
+                  <span className="mb-3 block text-sm font-medium text-white/90">
                     Your situation
-                  </label>
+                  </span>
                   <textarea
                     value={situation}
-                    onChange={(e) => setSituation(e.target.value)}
-                    placeholder="I'm trying to decide whether to leave my job and start my own company..."
-                    rows={4}
-                    className="w-full px-4 py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl font-sans text-[15px] text-white placeholder:text-[#333] focus:outline-none focus:border-[#404040] focus:ring-1 focus:ring-[#404040] resize-none transition-all duration-150 leading-relaxed"
+                    onChange={(event) => setSituation(event.target.value)}
+                    placeholder="I am deciding whether to stay where I am, or take the risk and build something of my own."
+                    rows={7}
+                    className="min-h-[240px] w-full rounded-[1.2rem] border border-white/10 bg-white/[0.04] px-4 py-4 text-base leading-8 text-white outline-none placeholder:text-white/30 focus:border-[rgba(217,195,154,0.28)] focus:bg-white/[0.06]"
                   />
-                </div>
+                </label>
 
                 <button
                   onClick={handleSubmit}
                   disabled={!situation.trim() || isProcessing}
-                  className="w-full h-12 flex items-center justify-center gap-2 bg-white text-black font-sans font-medium text-[14px] rounded-xl hover:bg-[#e5e5e5] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 transition-all duration-150 mt-2"
+                  className="button-lift flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-[1rem] bg-[var(--app-accent)] px-5 py-3 text-sm font-semibold text-[#17130d] hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-[var(--app-accent)]"
                 >
                   {isProcessing ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Creating...
+                      Creating session
                     </>
                   ) : (
                     <>
@@ -252,25 +235,33 @@ export function SetupPage() {
                 </button>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {/* Step 3: Processing */}
-          {step === "processing" && (
-            <div className="animate-fade-up flex flex-col items-center py-12">
-              <div className="relative size-32 mb-12">
-                <div className="absolute inset-0 rounded-full bg-[#7C3AED]/10 animate-breathe" />
-                <div className="absolute inset-4 rounded-full bg-[#7C3AED]/15 animate-breathe" style={{ animationDelay: "300ms" }} />
-                <div className="absolute inset-8 rounded-full bg-[#7C3AED]/25 animate-breathe" style={{ animationDelay: "600ms" }} />
-                <div className="absolute inset-[44px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] shadow-[0_0_40px_rgba(124,58,237,0.4)]" />
+          {step === "processing" ? (
+            <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
+              <div className="relative mb-10 flex size-36 items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(217,195,154,0.18),transparent_72%)] blur-3xl" />
+                <div className="absolute inset-3 rounded-full border border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.07)] animate-breathe" />
+                <div
+                  className="absolute inset-7 rounded-full border border-[rgba(217,195,154,0.16)] bg-[rgba(217,195,154,0.08)] animate-breathe"
+                  style={{ animationDelay: "220ms" }}
+                />
+                <div className="relative flex size-[4.5rem] items-center justify-center rounded-full bg-[var(--app-accent)] text-[#17130d]">
+                  <Loader2 className="size-6 animate-spin" />
+                </div>
               </div>
 
-              <p className="font-sans text-[15px] text-[#737373] text-center">
+              <p className="eyebrow mb-4">Preparing the conversation</p>
+              <h2 className="font-display text-[clamp(2.2rem,4vw,3.8rem)] text-white">
+                Building your future self.
+              </h2>
+              <p className="mt-5 max-w-xl text-[0.98rem] leading-8 text-[var(--app-muted)]">
                 {processingMessage}
               </p>
             </div>
-          )}
-        </div>
-      </div>
+          ) : null}
+        </section>
+      </PageFrame>
     </main>
   );
 }
