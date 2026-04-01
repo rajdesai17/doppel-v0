@@ -1,96 +1,123 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Mic, MessageCircle, Clock } from "lucide-react";
+import { ArrowRight, Mic, Clock, MessageSquare } from "lucide-react";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
+    <div className="min-h-screen flex flex-col bg-black">
+      {/* Nav - Fixed top bar */}
+      <header className="h-16 flex items-center justify-between px-8 border-b border-[#1a1a1a]">
+        <span className="font-mono text-sm font-medium tracking-[0.2em] text-white uppercase">
           DOPPEL
-        </div>
+        </span>
         <Link
           to="/setup"
-          className="text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
+          className="text-sm text-zinc-400 hover:text-white transition-colors"
         >
-          Begin
+          Begin <span className="ml-1">→</span>
         </Link>
       </header>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-        <div className="max-w-3xl mx-auto text-center animate-fade-in">
+      {/* Main content area */}
+      <main className="flex-1 flex flex-col">
+        {/* Hero Section - vertically centered, ~60vh */}
+        <section className="flex-1 flex flex-col items-center justify-center px-6 min-h-[60vh]">
           {/* Eyebrow */}
-          <p className="font-mono text-xs tracking-[0.3em] text-zinc-500 uppercase mb-6">
-            A conversation across time
+          <p className="text-[11px] font-mono tracking-[0.2em] text-[#666] uppercase mb-6">
+            A CONVERSATION ACROSS TIME
           </p>
 
-          {/* Main heading */}
-          <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-zinc-50 leading-[1.1] text-balance mb-8">
-            Meet Your
-            <br />
-            Future Self
+          {/* H1 */}
+          <h1 className="text-[clamp(48px,8vw,80px)] font-normal text-white leading-[1.05] tracking-[-0.03em] text-center mb-6">
+            Meet Your Future Self
           </h1>
 
-          {/* Subheading */}
-          <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-xl mx-auto mb-12 text-pretty">
-            Clone your voice. Describe your crossroads. Have a real conversation
-            with who you could become — 10 years from now.
+          {/* Subtext */}
+          <p className="text-lg text-[#999] text-center max-w-[560px] leading-relaxed mb-10">
+            Engage in a real-time conversation with an AI persona of your future self, powered by advanced voice synthesis. Describe your life&apos;s crossroads and gain grounded wisdom in your own voice from a decade forward.
           </p>
 
-          {/* CTA */}
+          {/* CTA - white pill button */}
           <Link
             to="/setup"
-            className="inline-flex items-center gap-3 bg-zinc-50 text-zinc-950 px-8 py-4 rounded-full font-medium text-lg hover:bg-zinc-200 transition-colors group"
+            className="inline-flex items-center justify-center gap-2 h-[52px] px-7 bg-white text-black font-medium rounded-full hover:scale-[1.02] transition-transform"
           >
             Start your conversation
-            <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="size-4" />
           </Link>
+        </section>
 
-          {/* Visual element - abstract waveform */}
-          <div className="mt-20 flex items-center justify-center gap-1">
-            {Array.from({ length: 40 }).map((_, i) => (
+        {/* Waveform - centered between hero and cards */}
+        <div className="flex items-end justify-center gap-[2px] h-[60px] mb-16">
+          {Array.from({ length: 80 }).map((_, i) => {
+            // Create a wave pattern that fades from center outward
+            const center = 40;
+            const distanceFromCenter = Math.abs(i - center);
+            const centerFactor = 1 - (distanceFromCenter / center) * 0.7;
+            const wave = Math.sin(i * 0.2) * 0.4 + 0.6;
+            const height = 8 + wave * centerFactor * 44;
+            const opacity = 0.15 + centerFactor * 0.35;
+            
+            return (
               <div
                 key={i}
-                className="w-1 bg-zinc-700 rounded-full animate-pulse-glow"
+                className="w-[3px] rounded-sm"
                 style={{
-                  height: `${20 + Math.sin(i * 0.3) * 15 + Math.random() * 10}px`,
-                  animationDelay: `${i * 50}ms`,
-                  opacity: 0.3 + Math.sin(i * 0.2) * 0.3,
+                  height: `${height}px`,
+                  backgroundColor: '#333',
+                  opacity,
                 }}
               />
-            ))}
-          </div>
+            );
+          })}
         </div>
+
+        {/* Feature Cards Row - bottom ~30vh */}
+        <section className="border-t border-[#1a1a1a]">
+          <div className="grid grid-cols-1 md:grid-cols-3">
+            <FeatureCard
+              icon={<Mic className="size-5 stroke-[1.5]" />}
+              title="Clone Your Voice"
+              description="30 seconds of speech creates your unique voice profile for a seamless experience."
+            />
+            <div className="hidden md:block border-l border-[#1a1a1a]">
+              <FeatureCard
+                icon={<Clock className="size-5 stroke-[1.5]" />}
+                title="Future Persona"
+                description="AI generates a grounded persona from your context, informed by your situation."
+                noBorder
+              />
+            </div>
+            <div className="md:hidden border-t border-[#1a1a1a]">
+              <FeatureCard
+                icon={<Clock className="size-5 stroke-[1.5]" />}
+                title="Future Persona"
+                description="AI generates a grounded persona from your context, informed by your situation."
+              />
+            </div>
+            <div className="hidden md:block border-l border-[#1a1a1a]">
+              <FeatureCard
+                icon={<MessageSquare className="size-5 stroke-[1.5]" />}
+                title="Real Conversation"
+                description="Speak naturally. Your future self responds in real-time, in your own voice."
+                noBorder
+              />
+            </div>
+            <div className="md:hidden border-t border-[#1a1a1a]">
+              <FeatureCard
+                icon={<MessageSquare className="size-5 stroke-[1.5]" />}
+                title="Real Conversation"
+                description="Speak naturally. Your future self responds in real-time, in your own voice."
+              />
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Features */}
-      <section className="border-t border-zinc-800/50 px-6 py-16">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <FeatureCard
-            icon={<Mic className="size-5" />}
-            title="Clone Your Voice"
-            description="30 seconds of speech creates your unique voice profile using ElevenLabs Instant Voice Clone."
-          />
-          <FeatureCard
-            icon={<Clock className="size-5" />}
-            title="Future Persona"
-            description="AI generates your future self — informed by your situation, grounded in earned wisdom."
-          />
-          <FeatureCard
-            icon={<MessageCircle className="size-5" />}
-            title="Real Conversation"
-            description="Speak naturally. Your future self responds in real-time, in your own voice."
-          />
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-800/50 px-6 py-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-zinc-500">
-          <span>Built with Cloudflare Agents + ElevenLabs</span>
-          <span>Hackathon 2025</span>
-        </div>
+      {/* Footer note */}
+      <footer className="py-6 text-center">
+        <p className="text-xs text-[#444]">
+          Built with Cloudflare Agents + ElevenLabs
+        </p>
       </footer>
     </div>
   );
@@ -100,18 +127,20 @@ function FeatureCard({
   icon,
   title,
   description,
+  noBorder = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  noBorder?: boolean;
 }) {
   return (
-    <div className="p-6 rounded-xl border border-zinc-800/50 bg-zinc-900/30 hover:bg-zinc-900/50 transition-colors">
-      <div className="size-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 mb-4">
+    <div className={`px-10 py-8 ${!noBorder ? 'md:border-t-0' : ''}`}>
+      <div className="text-[#555] mb-4">
         {icon}
       </div>
-      <h3 className="text-lg font-medium text-zinc-50 mb-2">{title}</h3>
-      <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
+      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+      <p className="text-sm text-[#777] leading-relaxed">{description}</p>
     </div>
   );
 }

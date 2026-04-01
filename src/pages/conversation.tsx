@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Phone, PhoneOff, Mic, MicOff, ArrowLeft } from "lucide-react";
+import { PhoneOff, Mic, MicOff } from "lucide-react";
 import { Conversation } from "@elevenlabs/client";
 import { cn } from "../lib/utils";
 
@@ -19,19 +19,15 @@ export function ConversationPage() {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [isMuted, setIsMuted] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
-  const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(
-    null
-  );
+  const [activeSpeaker, setActiveSpeaker] = useState<"user" | "future" | null>(null);
 
   const conversationRef = useRef<Conversation | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll transcript to bottom
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcript]);
 
-  // Connect to ElevenLabs ConvAI directly from browser
   useEffect(() => {
     if (!sessionId) return;
 
@@ -39,19 +35,14 @@ export function ConversationPage() {
 
     const startConversation = async () => {
       try {
-        // Get session data from localStorage (saved during setup)
         const sessionData = localStorage.getItem(`doppel_session_${sessionId}`);
         if (!sessionData) {
-          console.error("[conversation] No session data found for:", sessionId);
           setStatus("error");
           return;
         }
 
         const { agentId, userId, persona, voiceId } = JSON.parse(sessionData);
-        console.log("[conversation] Starting with agentId:", agentId, "voiceId:", voiceId);
 
-        // Get signed URL from server (keeps API key server-side)
-        console.log("[conversation] Fetching signed URL...");
         const signedUrlRes = await fetch(
           `/agents/present-self-agent/${userId}?method=getSignedUrl`,
           {
@@ -62,29 +53,21 @@ export function ConversationPage() {
         );
 
         if (!signedUrlRes.ok) {
-          const errData = await signedUrlRes.text();
-          throw new Error(errData || "Failed to get signed URL");
+          throw new Error("Failed to get signed URL");
         }
 
         const { signedUrl } = (await signedUrlRes.json()) as { signedUrl: string };
-        console.log("[conversation] Got signed URL, connecting...");
 
         if (cancelled) return;
 
-        // Pre-request microphone so the SDK can use it
         try {
           const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          console.log("[conversation] Microphone access granted, tracks:", micStream.getAudioTracks().map(t => t.label));
-          // Stop the stream — SDK will create its own
-          micStream.getTracks().forEach(t => t.stop());
-        } catch (micErr) {
-          console.error("[conversation] Microphone access DENIED:", micErr);
+          micStream.getTracks().forEach((t) => t.stop());
+        } catch {
           setStatus("error");
           return;
         }
 
-        // Connect directly to ElevenLabs from browser
-        // Override the shared agent's prompt, first message, and voice per conversation
         const conversation = await Conversation.startSession({
           signedUrl,
           overrides: {
@@ -96,16 +79,13 @@ export function ConversationPage() {
               voiceId: voiceId,
             },
           },
-          onConnect: ({ conversationId }) => {
-            console.log("[conversation] Connected to ElevenLabs:", conversationId);
+          onConnect: () => {
             setStatus("connected");
           },
           onDisconnect: () => {
-            console.log("[conversation] Disconnected from ElevenLabs");
             setStatus("disconnected");
           },
           onMessage: (message) => {
-            console.log("[conversation] Message:", message.role, message.message);
             setTranscript((prev) => [
               ...prev,
               {
@@ -115,12 +95,10 @@ export function ConversationPage() {
               },
             ]);
           },
-          onError: (error) => {
-            console.error("[conversation] ElevenLabs error:", error);
+          onError: () => {
             setStatus("error");
           },
           onModeChange: (mode) => {
-            console.log("[conversation] Mode changed:", mode);
             if (mode.mode === "speaking") {
               setActiveSpeaker("future");
             } else if (mode.mode === "listening") {
@@ -128,12 +106,6 @@ export function ConversationPage() {
             } else {
               setActiveSpeaker(null);
             }
-          },
-          onStatusChange: ({ status }) => {
-            console.log("[conversation] Status changed:", status);
-          },
-          onDebug: (props) => {
-            console.log("[conversation] Debug:", props);
           },
         });
 
@@ -143,9 +115,7 @@ export function ConversationPage() {
         }
 
         conversationRef.current = conversation;
-        console.log("[conversation] Session started successfully");
-      } catch (e) {
-        console.error("[conversation] Failed to start:", e);
+      } catch {
         if (!cancelled) setStatus("error");
       }
     };
@@ -155,16 +125,13 @@ export function ConversationPage() {
     return () => {
       cancelled = true;
       if (conversationRef.current) {
-        console.log("[conversation] Cleanup: ending session");
         conversationRef.current.endSession();
         conversationRef.current = null;
       }
     };
   }, [sessionId]);
 
-  // End conversation
   const endConversation = useCallback(async () => {
-    console.log("[conversation] User ended conversation");
     if (conversationRef.current) {
       await conversationRef.current.endSession();
       conversationRef.current = null;
@@ -173,7 +140,6 @@ export function ConversationPage() {
     navigate(`/replay/${sessionId}`);
   }, [sessionId, navigate]);
 
-  // Toggle mute
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const newMuted = !prev;
@@ -185,90 +151,120 @@ export function ConversationPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950">
+    <div className="min-h-screen h-screen flex flex-col bg-[rgb(var(--background))]">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50">
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
-        >
-          <ArrowLeft className="size-4" />
+      <header className="header shrink-0">
+        <Link to="/" className="btn btn-secondary h-9 px-4 text-sm">
           Exit
         </Link>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[rgb(var(--surface-1))]">
           <div
             className={cn(
-              "size-2 rounded-full",
-              status === "connected"
-                ? "bg-green-500"
-                : status === "connecting"
-                  ? "bg-yellow-500 animate-pulse"
-                  : "bg-red-500"
+              "status-dot",
+              status === "connected" && "status-dot-success",
+              status === "connecting" && "status-dot-warning",
+              (status === "disconnected" || status === "error") && "status-dot-error"
             )}
           />
-          <span className="text-xs text-zinc-400 capitalize">{status}</span>
+          <span className="text-sm text-[rgb(var(--text-secondary))]">{status}</span>
         </div>
-        <div className="font-mono text-sm tracking-widest text-zinc-400">
-          DOPPEL
-        </div>
+
+        <span className="header-logo">DOPPEL</span>
       </header>
 
       {/* Main conversation view */}
-      <main className="flex-1 flex flex-col lg:flex-row">
-        {/* Split screen: User vs Future */}
-        <div className="flex-1 grid grid-cols-2 gap-px bg-zinc-800">
-          {/* Present Self */}
-          <div className="bg-zinc-950 flex flex-col items-center justify-center p-8">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">
+      <main className="flex-1 flex flex-col lg:flex-row min-h-0">
+        {/* Split screen avatars */}
+        <div className="flex-1 grid grid-cols-2 min-h-[280px] lg:min-h-0">
+          {/* Present self - left */}
+          <div className="split-left flex flex-col items-center justify-center p-6 relative">
+            <p className="text-mono text-[rgb(var(--text-tertiary))] mb-8">
               You — Now
             </p>
             <div
               className={cn(
-                "size-32 rounded-full bg-zinc-800 flex items-center justify-center transition-all duration-150",
-                activeSpeaker === "user" && "ring-4 ring-violet-500/50 scale-105"
+                "avatar-ring",
+                activeSpeaker === "user" && "avatar-ring-active"
               )}
             >
-              <div className="size-20 rounded-full bg-zinc-700 flex items-center justify-center text-2xl">
-                {isMuted ? (
-                  <MicOff className="size-8 text-zinc-500" />
-                ) : (
-                  <Mic className="size-8 text-zinc-300" />
+              <div
+                className={cn(
+                  "size-32 lg:size-40 rounded-full flex items-center justify-center transition-all duration-300",
+                  activeSpeaker === "user"
+                    ? "bg-[rgb(var(--foreground)/0.15)]"
+                    : "bg-[rgb(var(--surface-1))]"
                 )}
+              >
+                <div className="size-20 lg:size-24 rounded-full bg-[rgb(var(--surface-2))] flex items-center justify-center">
+                  {isMuted ? (
+                    <MicOff className="size-8 text-[rgb(var(--text-muted))]" />
+                  ) : (
+                    <Mic
+                      className={cn(
+                        "size-8 transition-colors",
+                        activeSpeaker === "user"
+                          ? "text-[rgb(var(--foreground))]"
+                          : "text-[rgb(var(--text-secondary))]"
+                      )}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Future Self */}
-          <div className="bg-zinc-900 flex flex-col items-center justify-center p-8">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">
+          {/* Future self - right */}
+          <div className="split-right flex flex-col items-center justify-center p-6 border-l border-[rgb(var(--border)/0.5)] relative">
+            <p className="text-mono text-[rgb(var(--text-tertiary))] mb-8">
               You — 2035
             </p>
             <div
               className={cn(
-                "size-32 rounded-full bg-violet-900/30 flex items-center justify-center transition-all duration-150",
-                activeSpeaker === "future" && "ring-4 ring-violet-500 scale-105"
+                "avatar-ring",
+                activeSpeaker === "future" && "avatar-ring-speaking"
               )}
             >
-              <div className="size-20 rounded-full bg-violet-800/50 flex items-center justify-center">
-                <Phone className="size-8 text-violet-300" />
+              <div
+                className={cn(
+                  "size-32 lg:size-40 rounded-full flex items-center justify-center transition-all duration-300 overflow-hidden",
+                  activeSpeaker === "future"
+                    ? "ring-2 ring-[rgb(var(--accent))] animate-glow-pulse"
+                    : ""
+                )}
+                style={{
+                  background: "linear-gradient(135deg, rgb(var(--accent) / 0.2) 0%, rgb(var(--surface-2)) 100%)",
+                }}
+              >
+                {/* Placeholder for future self avatar - could be an image */}
+                <div className="size-20 lg:size-24 rounded-full bg-[rgb(var(--surface-3))] flex items-center justify-center border-2 border-[rgb(var(--accent)/0.3)]">
+                  <div
+                    className={cn(
+                      "size-4 rounded-full transition-all",
+                      activeSpeaker === "future"
+                        ? "bg-[rgb(var(--accent))] scale-125"
+                        : "bg-[rgb(var(--text-tertiary))]"
+                    )}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Transcript sidebar */}
-        <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-zinc-800 flex flex-col">
-          <div className="px-4 py-3 border-b border-zinc-800">
-            <h3 className="text-sm font-medium text-zinc-300">Transcript</h3>
+        <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-[rgb(var(--border)/0.5)] flex flex-col bg-[rgb(var(--surface-1)/0.3)]">
+          <div className="px-5 py-4 border-b border-[rgb(var(--border)/0.3)]">
+            <h3 className="text-sm font-medium text-[rgb(var(--text-secondary))]">Transcript</h3>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-64 lg:max-h-none">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 max-h-48 lg:max-h-none">
             {transcript.length === 0 && (
-              <p className="text-sm text-zinc-500 text-center py-8">
+              <p className="text-caption text-center py-8">
                 {status === "connecting"
-                  ? "Connecting to your future self..."
+                  ? "Connecting..."
                   : status === "error"
-                    ? "Failed to connect. Please go back and try again."
-                    : "Start speaking to begin the conversation."}
+                    ? "Connection failed"
+                    : "Start speaking to begin"}
               </p>
             )}
             {transcript.map((entry, i) => (
@@ -276,22 +272,17 @@ export function ConversationPage() {
                 key={i}
                 className={cn(
                   "animate-fade-in",
-                  entry.speaker === "future" ? "text-right" : "text-left"
+                  entry.speaker === "future" ? "pl-4" : "pr-4"
                 )}
               >
-                <p className="text-xs text-zinc-500 mb-1">
-                  {entry.speaker === "user" ? "You (Now)" : "You (2035)"}
-                </p>
-                <p
+                <div
                   className={cn(
-                    "inline-block px-3 py-2 rounded-lg text-sm max-w-[85%]",
-                    entry.speaker === "future"
-                      ? "bg-violet-900/30 text-violet-100"
-                      : "bg-zinc-800 text-zinc-200"
+                    "message-bubble",
+                    entry.speaker === "future" ? "message-bubble-future" : "message-bubble-user"
                   )}
                 >
                   {entry.text}
-                </p>
+                </div>
               </div>
             ))}
             <div ref={transcriptEndRef} />
@@ -300,32 +291,42 @@ export function ConversationPage() {
       </main>
 
       {/* Controls */}
-      <footer className="border-t border-zinc-800 px-6 py-4">
-        <div className="flex items-center justify-center gap-4">
+      <footer className="shrink-0 border-t border-[rgb(var(--border)/0.5)] px-6 py-5 bg-[rgb(var(--background))]">
+        <div className="flex items-center justify-center gap-5">
+          {/* Mute toggle */}
           <button
             onClick={toggleMute}
             className={cn(
-              "size-12 rounded-full flex items-center justify-center transition-colors",
+              "relative flex items-center gap-2 px-4 py-2 rounded-full transition-all",
               isMuted
-                ? "bg-zinc-700 text-zinc-400"
-                : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                ? "bg-[rgb(var(--surface-2))]"
+                : "bg-[rgb(var(--surface-1))]"
             )}
-            aria-label={isMuted ? "Unmute" : "Mute"}
           >
-            {isMuted ? (
-              <MicOff className="size-5" />
-            ) : (
-              <Mic className="size-5" />
-            )}
+            <div
+              className={cn(
+                "size-5 rounded-full flex items-center justify-center transition-colors",
+                isMuted ? "bg-[rgb(var(--text-muted))]" : "bg-[rgb(var(--foreground))]"
+              )}
+            >
+              <div className="size-2 rounded-full bg-[rgb(var(--background))]" />
+            </div>
+            <span className="text-sm text-[rgb(var(--text-secondary))]">mute</span>
           </button>
 
+          {/* End call */}
           <button
             onClick={endConversation}
-            className="size-14 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors"
+            className="size-16 rounded-full bg-[rgb(var(--error))] text-white flex items-center justify-center hover:bg-[rgb(var(--error)/0.9)] transition-colors"
             aria-label="End conversation"
           >
             <PhoneOff className="size-6" />
           </button>
+
+          {/* Mic indicator */}
+          <div className="flex items-center gap-2 px-3 py-2">
+            <Mic className="size-5 text-[rgb(var(--text-tertiary))]" />
+          </div>
         </div>
       </footer>
     </div>
