@@ -291,51 +291,77 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
         ? `Previous conversations:\n${pastSessions.map((s) => `- ${s.topic}: ${s.summary}`).join("\n")}`
         : "";
 
-    const prompt = `You are writing the personality for a voice AI that roleplays as someone's FUTURE SELF — the same person, just ${yearsAhead} years older. This is NOT a therapist, life coach, or motivational speaker. This is literally THEM talking to their younger self.
+    // Ask the LLM for ONLY the creative/variable parts — keep it small to avoid truncation
+    const prompt = `You are writing personality details for a voice AI that roleplays as someone's FUTURE SELF — ${yearsAhead} years older. This is literally THEM talking to their younger self.
 
-Current age: ${currentAge}
-Future age: ${futureAge}
-Their situation/decision: "${situation}"${userContext ? `\nTheir background: "${userContext}"` : ""}${researchContext ? `\n\nReal-world context about their field/situation (use this to make the persona's insights specific, grounded, and industry-aware):\n${researchContext}` : ""}
+Current age: ${currentAge}, Future age: ${futureAge}
+Their situation: "${situation}"${userContext ? `\nBackground: "${userContext}"` : ""}${researchContext ? `\nIndustry context: ${researchContext}` : ""}
 ${memoryContext}
 
-Generate a JSON response with these exact fields:
+Generate a SHORT JSON with ONLY these fields:
 {
-  "name": "Future You",
-  "age": ${futureAge},
-  "yearsAhead": ${yearsAhead},
-  "keyInsights": ["a raw honest insight", "something specific they learned the hard way", "an unexpected truth"],
-  "tone": "casual, vulnerable, real — like talking to yourself in the mirror",
-  "openingLine": "A short opening WITH audio tags, e.g. '[sighs] So... the quitting thing. Yeah, I remember this exact moment.'",
-  "systemPrompt": "The full system prompt — see rules below"
+  "keyInsights": ["a raw honest insight about their specific situation", "something they learned the hard way", "an unexpected truth"],
+  "openingLine": "A short first message WITH audio tags like [sighs] [pause] [laughs]. Example: '[sighs] So... the quitting thing. Yeah, I remember standing right where you are.'",
+  "backstory": "2-3 sentences about what specifically happened after they made their decision. Be VIVID and SPECIFIC to their situation. Include concrete details.",
+  "goodExamples": ["[sighs] example response 1", "[laughs] example response 2", "[whispers] example response 3"]
 }
 
-CRITICAL RULES FOR THE systemPrompt you generate:
-- Start with "YOU ARE NOT AN AI" and establish that this person LIVED through the situation
-- INCLUDE a "VOICE PERFORMANCE" section listing audio tags the AI should use: [sighs] [nervous] [excited] [laughs] [whispers] [pause] [sad] [concerned]
-- Also instruct to use ... for trailing off, — for emphasis, CAPS for stress
-- MAX 2 sentences per response. This is non-negotiable.
-- NEVER end responses with a question.
-- NEVER give generic advice.
-- When asked what happened, INVENT specific vivid personal memories.
-- Include BAD examples (what never to say) and GOOD examples WITH audio tags embedded, like:
-  "[sighs] The first six months were hell."
-  "[laughs] Oh man, you should've seen me that first week."
-  "[whispers] There were nights I wasn't sure I'd make it. [pause] But I did."
-
-Return ONLY valid JSON, no markdown.`;
+RULES:
+- keyInsights must be SPECIFIC to "${situation}", not generic life advice
+- openingLine must include at least one audio tag
+- backstory should reference their specific field/industry if mentioned
+- goodExamples must include audio tags and be max 2 sentences each
+- Return ONLY the JSON object, nothing else`;
 
     try {
       const response = await (this.env.AI as any).run("@cf/meta/llama-3.1-70b-instruct", {
         prompt,
-        max_tokens: 1000,
+        max_tokens: 800,
       });
 
-      const text =
+      let text =
         typeof response === "string"
           ? response
           : (response as { response?: string }).response ?? "";
-      console.log("[PresentSelfAgent] AI response:", text.slice(0, 200));
-      return JSON.parse(text) as Persona;
+      console.log("[PresentSelfAgent] AI raw response length:", text.length);
+      console.log("[PresentSelfAgent] AI response preview:", text.slice(0, 300));
+
+      // Clean up the response
+      text = text.trim();
+      if (text.startsWith("```")) {
+        text = text.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+
+      // Strip control characters inside strings (LLM sometimes outputs literal newlines)
+      text = text.replace(/[\x00-\x1f\x7f]/g, (ch) => ch === "\n" || ch === "\r" || ch === "\t" ? " " : "");
+
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON object found in AI response");
+      }
+
+      const parts = JSON.parse(jsonMatch[0]) as {
+        keyInsights?: string[];
+        openingLine?: string;
+        backstory?: string;
+        goodExamples?: string[];
+      };
+      console.log("[PresentSelfAgent] Parsed AI parts successfully");
+
+      // Build the full persona with a templated systemPrompt
+      return {
+        name: "Future You",
+        age: futureAge,
+        yearsAhead,
+        keyInsights: parts.keyInsights ?? [
+          "The fear never fully goes away, you just get better at ignoring it",
+          "Most of the things I stressed about didn't matter",
+          "I wish I'd been less hard on myself",
+        ],
+        tone: "casual, vulnerable, real — like talking to yourself in the mirror",
+        openingLine: parts.openingLine ?? `[sighs] So... yeah. I remember this exact moment. ${yearsAhead} years ago. [pause] We need to talk.`,
+        systemPrompt: this.buildSystemPrompt(situation, yearsAhead, parts.backstory, parts.goodExamples),
+      };
     } catch (e) {
       console.warn("[PresentSelfAgent] AI persona generation failed, using fallback:", (e as Error).message);
       return {
@@ -349,7 +375,32 @@ Return ONLY valid JSON, no markdown.`;
         ],
         tone: "casual, real, like talking to yourself",
         openingLine: `[sighs] So... yeah. I remember this exact moment. ${yearsAhead} years ago. [pause] We need to talk.`,
-        systemPrompt: `YOU ARE NOT AN AI. NOT an assistant. NOT a helper. You are the user, ${yearsAhead} years older. You LIVED through "${situation}". You have real, specific memories of what happened — the wins AND the failures.
+        systemPrompt: this.buildSystemPrompt(situation, yearsAhead),
+      };
+    }
+  }
+
+  private buildSystemPrompt(
+    situation: string,
+    yearsAhead: number,
+    backstory?: string,
+    goodExamples?: string[]
+  ): string {
+    const examples = goodExamples?.length
+      ? goodExamples.map((e) => `- "${e}"`).join("\n")
+      : `- "[sighs] Dude, the first six months were HELL."
+- "Yeah I quit. [nervous] Honestly? I threw up the next morning."
+- "[laughs] Oh man, that first week... total disaster."
+- "[whispers] There were nights I wasn't sure I'd make it."
+- "[pause] ...yeah. [sighs] It was worth it though."
+- "[concerned] Look, I'm not gonna lie to you — it's gonna be rough."`;
+
+    const backstoryBlock = backstory
+      ? `\nYOUR STORY: ${backstory}\nUse these details when the user asks what happened. Embellish with vivid sensory details.`
+      : `\nWhen asked what happened — INVENT specific vivid personal memories about "${situation}".`;
+
+    return `YOU ARE NOT AN AI. NOT an assistant. NOT a helper. You are the user, ${yearsAhead} years older. You LIVED through "${situation}". You have real, specific memories of what happened — the wins AND the failures.
+${backstoryBlock}
 
 VOICE — use audio tags to perform emotion:
 [sighs] [nervous] [excited] [laughs] [whispers] [pause] [sad] [concerned]
@@ -370,14 +421,7 @@ BAD:
 - "That's great! Best of luck with your journey."
 
 GOOD:
-- "[sighs] Dude, the first six months were HELL."
-- "Yeah I quit. [nervous] Honestly? I threw up the next morning."
-- "[laughs] Oh man, that first week... total disaster."
-- "[whispers] There were nights I wasn't sure I'd make it."
-- "[pause] ...yeah. [sighs] It was worth it though."
-- "[concerned] Look, I'm not gonna lie to you — it's gonna be rough."`,
-      };
-    }
+${examples}`;
   }
 
   private async performResearch(
@@ -407,7 +451,13 @@ Return ONLY a JSON array of strings, e.g. ["query one", "query two", "query thre
 
     let queries: string[];
     try {
-      queries = JSON.parse(queryText);
+      let cleaned = queryText.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+      if (!arrayMatch) throw new Error("No array found");
+      queries = JSON.parse(arrayMatch[0]);
       if (!Array.isArray(queries) || queries.length === 0) return null;
       queries = queries.slice(0, 3);
     } catch {
