@@ -569,10 +569,10 @@ Write a brief 2-4 sentence closing message from the future self's perspective. I
 - Feel like a parting thought, not a formal summary
 - Reference something SPECIFIC from the conversation
 - Be raw and honest, not motivational-poster generic
-- Start with an audio tag like [sighs], [pause], or [quiet]
+- NOT include any audio tags like [sighs], [pause], [softly], [whispers] etc — this is written text, not voice
 - NOT end with a question
 
-Return ONLY the message text, nothing else.`;
+Return ONLY the plain message text, nothing else.`;
 
     try {
       const response = await (this.env.AI as any).run(
@@ -585,7 +585,8 @@ Return ONLY the message text, nothing else.`;
           ? response
           : (response as { response?: string }).response ?? "";
 
-      const summary = text.trim() || "Take care of yourself. You already know what to do.";
+      // Strip any audio tags that slipped through (e.g. [sighs], [softly], [pause])
+      const summary = text.trim().replace(/\[[\w]+\]\s*/gi, "") || "Take care of yourself. You already know what to do.";
 
       // Save to session for memory context in future conversations
       await this.addSessionSummary(sessionId, topic, summary);
