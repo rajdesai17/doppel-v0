@@ -32,6 +32,7 @@ type CallableMethod =
   | "initSession"
   | "getSignedUrl"
   | "addSessionSummary"
+  | "generateSummary"
   | "getMemory";
 
 export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
@@ -136,6 +137,12 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
           params.sessionId as string,
           params.topic as string,
           params.summary as string
+        );
+
+      case "generateSummary":
+        return this.generateSummary(
+          params.sessionId as string,
+          params.transcript as Array<{ speaker: string; text: string }>
         );
 
       case "getMemory":
@@ -478,6 +485,68 @@ ${combinedResults}`;
     }
 
     return parts.join("\n\n");
+  }
+
+  private async generateSummary(
+    sessionId: string,
+    transcript: Array<{ speaker: string; text: string }>
+  ): Promise<{ summary: string }> {
+    // Look up the persona for this session
+    const rows = this.sql<{ topic: string; persona_json: string }>`
+      SELECT topic, persona_json FROM sessions WHERE session_id = ${sessionId} LIMIT 1
+    `;
+
+    const topic = rows[0]?.topic ?? "their life decision";
+    let personaAge = "";
+    try {
+      const persona = JSON.parse(rows[0]?.persona_json ?? "{}");
+      personaAge = persona.age ? `${persona.age}-year-old` : "";
+    } catch { /* ignore */ }
+
+    const conversationText = transcript
+      .map((t) => `${t.speaker === "user" ? "You" : "Future You"}: ${t.text}`)
+      .join("\n");
+
+    const prompt = `You are writing a brief closing message from someone's FUTURE SELF after a voice conversation just ended. This is NOT a therapist summary. This is the future self leaving one last piece of raw, honest advice.
+
+The conversation was about: "${topic}"
+The future self is their ${personaAge} version.
+
+Here is the conversation transcript:
+${conversationText.slice(0, 3000)}
+
+Write a brief 2-4 sentence closing message from the future self's perspective. It should:
+- Feel like a parting thought, not a formal summary
+- Reference something SPECIFIC from the conversation
+- Be raw and honest, not motivational-poster generic
+- Start with an audio tag like [sighs], [pause], or [quiet]
+- NOT end with a question
+
+Return ONLY the message text, nothing else.`;
+
+    try {
+      const response = await (this.env.AI as any).run(
+        "@cf/meta/llama-3.1-70b-instruct",
+        { prompt, max_tokens: 300 }
+      );
+
+      const text =
+        typeof response === "string"
+          ? response
+          : (response as { response?: string }).response ?? "";
+
+      const summary = text.trim() || "Take care of yourself. You already know what to do.";
+
+      // Save to session for memory context in future conversations
+      await this.addSessionSummary(sessionId, topic, summary);
+
+      return { summary };
+    } catch (e) {
+      console.warn("[PresentSelfAgent] Summary generation failed:", (e as Error).message);
+      const fallback = "Take care of yourself. You already know what to do.";
+      await this.addSessionSummary(sessionId, topic, fallback);
+      return { summary: fallback };
+    }
   }
 
   private async addSessionSummary(

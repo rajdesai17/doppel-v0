@@ -140,9 +140,14 @@ export function ConversationPage() {
       await conversationRef.current.endSession();
       conversationRef.current = null;
     }
+    // Persist transcript before navigating so the summary page can use it
+    localStorage.setItem(
+      `doppel_transcript_${sessionId}`,
+      JSON.stringify(transcript)
+    );
     setStatus("disconnected");
     navigate(`/replay/${sessionId}`);
-  }, [navigate, sessionId]);
+  }, [navigate, sessionId, transcript]);
 
   const toggleMute = useCallback(() => {
     setIsMuted((m) => {
