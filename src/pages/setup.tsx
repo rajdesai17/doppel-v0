@@ -1,6 +1,15 @@
 import { Fragment, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  AudioLines,
+  Check,
+  Loader2,
+  Mic,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,9 +37,7 @@ export function SetupPage() {
   const [userContext, setUserContext] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [processingMessage, setProcessingMessage] = useState(
-    "Analyzing your voice..."
-  );
+  const [activeStep, setActiveStep] = useState(0);
 
   const currentStep =
     step === "voice" ? 1 : step === "situation" ? 2 : 3;
@@ -40,30 +47,31 @@ export function SetupPage() {
     setStep("situation");
   };
 
+  const hasContext = userContext.trim().length > 0;
+
+  const processingSteps = [
+    { icon: AudioLines, label: "Analyzing voice patterns" },
+    { icon: Mic, label: "Creating voice clone" },
+    ...(hasContext ? [{ icon: Search, label: "Researching your field" }] : []),
+    { icon: Sparkles, label: "Generating future persona" },
+  ];
+
   const handleSubmit = async () => {
     if (!audioBlob || !situation.trim()) return;
 
     setIsProcessing(true);
     setStep("processing");
     setError(null);
-
-    const messages = [
-      "Analyzing your voice...",
-      "Creating voice clone...",
-      ...(userContext.trim() ? ["Researching your field..."] : []),
-      "Generating future persona...",
-    ];
-
-    let messageIndex = 0;
-    const interval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % messages.length;
-      setProcessingMessage(messages[messageIndex]);
-    }, 2000);
+    setActiveStep(0);
 
     try {
       const userId = getUserId();
-      const audioBase64 = await blobToBase64(audioBlob);
 
+      // Step 0: Analyzing voice
+      const audioBase64 = await blobToBase64(audioBlob);
+      setActiveStep(1);
+
+      // Step 1: Creating voice clone
       const cloneResponse = await fetch(
         `/agents/present-self-agent/${userId}?method=cloneVoice`,
         {
@@ -75,6 +83,15 @@ export function SetupPage() {
 
       if (!cloneResponse.ok) {
         throw new Error("Voice cloning failed. Try a clearer recording.");
+      }
+
+      // Step 2 (or final): Research + persona generation happen server-side
+      setActiveStep(2);
+
+      // If we have userContext, show the research step briefly before persona step
+      if (hasContext) {
+        // Research + persona happen in one API call; simulate the sub-step
+        setTimeout(() => setActiveStep(3), 4000);
       }
 
       const sessionResponse = await fetch(
@@ -95,6 +112,9 @@ export function SetupPage() {
         throw new Error("Session creation failed. Please try again.");
       }
 
+      // All steps complete
+      setActiveStep(processingSteps.length);
+
       const { sessionId, persona, agentId, voiceId } =
         (await sessionResponse.json()) as {
           sessionId: string;
@@ -108,13 +128,12 @@ export function SetupPage() {
         JSON.stringify({ persona, agentId, voiceId, userId })
       );
 
-      clearInterval(interval);
       navigate(`/conversation/${sessionId}`);
     } catch (caughtError) {
-      clearInterval(interval);
       setError((caughtError as Error).message);
       setStep("situation");
       setIsProcessing(false);
+      setActiveStep(0);
     }
   };
 
@@ -301,20 +320,78 @@ export function SetupPage() {
           {step === "processing" && (
             <motion.div
               key="processing"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center text-center"
+              className="w-full max-w-sm"
             >
-              <div className="flex size-16 items-center justify-center rounded-full border border-border bg-secondary">
-                <Loader2 className="size-6 animate-spin" />
+              <div className="mb-8 text-center">
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Building your future self
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This usually takes about 30 seconds
+                </p>
               </div>
-              <p className="mt-6 text-lg font-medium">
-                {processingMessage}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                This usually takes about 30 seconds
-              </p>
+
+              <div className="rounded-xl border border-border/50 bg-card p-5">
+                <div className="flex flex-col gap-4">
+                  {processingSteps.map((s, i) => {
+                    const isComplete = i < activeStep;
+                    const isActive = i === activeStep;
+                    const isPending = i > activeStep;
+                    const Icon = s.icon;
+
+                    return (
+                      <motion.div
+                        key={s.label}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: i * 0.1 }}
+                        className="flex items-center gap-3"
+                      >
+                        <div
+                          className={cn(
+                            "flex size-8 shrink-0 items-center justify-center rounded-full transition-all duration-500",
+                            isComplete &&
+                              "bg-foreground text-background",
+                            isActive &&
+                              "border-2 border-foreground bg-foreground/5",
+                            isPending && "border border-border"
+                          )}
+                        >
+                          {isComplete ? (
+                            <Check className="size-3.5" />
+                          ) : isActive ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Icon
+                              className={cn(
+                                "size-3.5",
+                                isPending && "text-muted-foreground/50"
+                              )}
+                            />
+                          )}
+                        </div>
+
+                        <span
+                          className={cn(
+                            "text-sm transition-colors duration-300",
+                            isComplete && "text-muted-foreground",
+                            isActive && "font-medium text-foreground",
+                            isPending && "text-muted-foreground/50"
+                          )}
+                        >
+                          {s.label}
+                          {isActive && (
+                            <span className="ml-1 inline-block h-3.5 w-px animate-pulse bg-foreground align-middle" />
+                          )}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
