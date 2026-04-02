@@ -124,7 +124,8 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
         return this.initSession(
           params.situation as string,
           params.userAge as number,
-          params.yearsAhead as number
+          params.yearsAhead as number,
+          params.userContext as string | undefined
         );
 
       case "getSignedUrl":
@@ -198,7 +199,8 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
   private async initSession(
     situation: string,
     userAge: number,
-    yearsAhead: number = 10
+    yearsAhead: number = 10,
+    userContext?: string
   ): Promise<{
     sessionId: string;
     persona: Persona;
@@ -217,7 +219,8 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
       situation,
       userAge,
       futureAge,
-      yearsAhead
+      yearsAhead,
+      userContext
     );
     console.log("[PresentSelfAgent] initSession: persona generated");
 
@@ -263,8 +266,18 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
     situation: string,
     currentAge: number,
     futureAge: number,
-    yearsAhead: number
+    yearsAhead: number,
+    userContext?: string
   ): Promise<Persona> {
+    let researchContext = "";
+    if (userContext?.trim()) {
+      try {
+        researchContext = await this.performResearch(userContext, situation) ?? "";
+      } catch (e) {
+        console.warn("[PresentSelfAgent] Research failed, continuing without:", (e as Error).message);
+      }
+    }
+
     const pastSessions = this.state.sessions.slice(-3);
     const memoryContext =
       pastSessions.length > 0
@@ -275,7 +288,7 @@ export class PresentSelfAgent extends Agent<Env, PresentSelfState> {
 
 Current age: ${currentAge}
 Future age: ${futureAge}
-Their situation/decision: "${situation}"
+Their situation/decision: "${situation}"${userContext ? `\nTheir background: "${userContext}"` : ""}${researchContext ? `\n\nReal-world context about their field/situation (use this to make the persona's insights specific, grounded, and industry-aware):\n${researchContext}` : ""}
 ${memoryContext}
 
 Generate a JSON response with these exact fields:
@@ -358,6 +371,113 @@ GOOD:
 - "[concerned] Look, I'm not gonna lie to you — it's gonna be rough."`,
       };
     }
+  }
+
+  private async performResearch(
+    userContext: string,
+    situation: string
+  ): Promise<string | null> {
+    // Stage 1: Extract search queries from user context
+    const queryPrompt = `Given this person's background and situation, generate 2-3 Google-style search queries to find real-world information about their field, industry, and career path.
+
+Background: "${userContext}"
+Situation: "${situation}"
+
+IMPORTANT: Do NOT include any personal information — no names, ages, locations, company names. Only use generic industry/topic terms.
+
+Return ONLY a JSON array of strings, e.g. ["query one", "query two", "query three"]. No markdown, no explanation.`;
+
+    const queryResponse = await (this.env.AI as any).run(
+      "@cf/meta/llama-3.1-70b-instruct",
+      { prompt: queryPrompt, max_tokens: 200 }
+    );
+
+    const queryText =
+      typeof queryResponse === "string"
+        ? queryResponse
+        : (queryResponse as { response?: string }).response ?? "";
+    console.log("[PresentSelfAgent] Search queries:", queryText.slice(0, 200));
+
+    let queries: string[];
+    try {
+      queries = JSON.parse(queryText);
+      if (!Array.isArray(queries) || queries.length === 0) return null;
+      queries = queries.slice(0, 3);
+    } catch {
+      console.warn("[PresentSelfAgent] Failed to parse search queries");
+      return null;
+    }
+
+    // Stage 2: Search in parallel
+    const searchResults = await Promise.allSettled(
+      queries.map((q) => this.tavilySearch(q))
+    );
+    const successfulResults = searchResults
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled")
+      .map((r) => r.value);
+
+    if (successfulResults.length === 0) {
+      console.warn("[PresentSelfAgent] All searches failed");
+      return null;
+    }
+
+    const combinedResults = successfulResults.join("\n\n---\n\n").slice(0, 4000);
+
+    // Stage 3: Synthesize into concise context
+    const synthesisPrompt = `You are given raw search results about a specific industry/career field. Distill them into a ~300-word factual context block.
+
+Focus on: industry trends, realistic challenges, common career trajectories, specific numbers or statistics, what the first 1-2 years typically look like, common mistakes newcomers make.
+
+Write flowing prose — no headers, no bullet points, no markdown. Be factual and specific.
+
+Search results:
+${combinedResults}`;
+
+    const synthesisResponse = await (this.env.AI as any).run(
+      "@cf/meta/llama-3.1-70b-instruct",
+      { prompt: synthesisPrompt, max_tokens: 500 }
+    );
+
+    const synthesized =
+      typeof synthesisResponse === "string"
+        ? synthesisResponse
+        : (synthesisResponse as { response?: string }).response ?? "";
+
+    return synthesized.trim() || null;
+  }
+
+  private async tavilySearch(query: string): Promise<string> {
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: this.env.TAVILY_API_KEY,
+        query,
+        search_depth: "basic",
+        include_answer: true,
+        include_raw_content: false,
+        max_results: 3,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Tavily search failed: ${response.status}`);
+    }
+
+    const data = (await response.json()) as {
+      answer?: string;
+      results?: { content: string }[];
+    };
+
+    const parts: string[] = [];
+    if (data.answer) parts.push(data.answer);
+    if (data.results) {
+      for (const r of data.results) {
+        if (r.content) parts.push(r.content);
+      }
+    }
+
+    return parts.join("\n\n");
   }
 
   private async addSessionSummary(

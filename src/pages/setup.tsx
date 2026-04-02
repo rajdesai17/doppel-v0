@@ -25,6 +25,7 @@ export function SetupPage() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [situation, setSituation] = useState("");
   const [age, setAge] = useState(25);
+  const [userContext, setUserContext] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState(
@@ -49,6 +50,7 @@ export function SetupPage() {
     const messages = [
       "Analyzing your voice...",
       "Creating voice clone...",
+      ...(userContext.trim() ? ["Researching your field..."] : []),
       "Generating future persona...",
     ];
 
@@ -84,6 +86,7 @@ export function SetupPage() {
             situation: situation.trim(),
             userAge: age,
             yearsAhead: 10,
+            userContext: userContext.trim() || undefined,
           }),
         }
       );
@@ -235,6 +238,27 @@ export function SetupPage() {
                         max={80}
                         className="h-10 max-w-[100px]"
                       />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">
+                        About you{" "}
+                        <span className="font-normal text-muted-foreground">
+                          (optional)
+                        </span>
+                      </label>
+                      <Textarea
+                        value={userContext}
+                        onChange={(e) => setUserContext(e.target.value)}
+                        placeholder="e.g. I'm a backend developer at a fintech startup, 4 years in tech..."
+                        rows={3}
+                        maxLength={500}
+                        className="resize-none"
+                      />
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        Your role, industry, or background — helps make your
+                        future self more realistic
+                      </p>
                     </div>
 
                     <div>

@@ -7,5 +7,6 @@ interface Env {
   FutureSelfAgent: DurableObjectNamespace;
   ELEVENLABS_API_KEY: string;
   ELEVENLABS_AGENT_ID: string;
+  TAVILY_API_KEY: string;
   ENVIRONMENT: string;
 }
